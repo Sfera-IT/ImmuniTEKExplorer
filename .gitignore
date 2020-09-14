@@ -1,0 +1,8 @@
+charthits.txt
+log.txt
+vendor/
+zip/
+data/
+export.bin
+.DS_Store
+composer.lock
