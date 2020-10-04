@@ -10,7 +10,7 @@ $objects = [];
 
 $hit = $_SERVER['REMOTE_ADDR'];
 file_put_contents('./charthits.txt', $hit."\n", FILE_APPEND);
-
+$totKeys = 0;
 foreach ($dirNames as $dirName) {
     $filename = './data/'.$dirName.'/export.bin';
     $data = "";
@@ -32,6 +32,8 @@ foreach ($dirNames as $dirName) {
         'y' => count($pbuf->getKeys()),
         'x' => date('Y-m-d', $pbuf->getEndTimestamp()),
     ];
+
+    $totKeys += count($pbuf->getKeys());
 
     $objects[] = $finalObj;
 }
@@ -60,6 +62,9 @@ foreach ($groupObjects as $k => $v) {
 </head>
 <body>
 I dati di oggi non vanno considerati definitivi fino alla mezzanotte <br />
+Totale TEK caricate dal 18 agosto ad oggi: <?php echo $totKeys; ?> <br />
+Stima notificati dal 18 agosto ad oggi (TEK/10): <?php echo $totKeys/10; ?> <br />
+Visualizzazioni di questa pagina: <?php echo explode(" ", exec('wc -l ./charthits.txt'))[0]; ?>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.8.0/Chart.bundle.js"></script>
 <div class="container">
     <canvas id="examChart"></canvas>
