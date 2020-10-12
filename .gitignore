@@ -3,6 +3,8 @@ log.txt
 vendor/
 zip/
 data/
+zipnhs/
+datanhs/
 export.bin
 .DS_Store
 composer.lock
