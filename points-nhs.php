@@ -15,7 +15,7 @@ $totKeys = 0;
 $file = file_get_contents('./cache.json');
 $content = json_decode($file, true);
 
-if (!$content || ($content['timestamp'] - (new DateTime())->getTimestamp()) > 86400) {
+if (!$content || ((new DateTime())->getTimestamp()) - $content['timestamp'] > 86400) {
 
     foreach ($dirNames as $dirName) {
         $filename = './datanhs/'.$dirName.'/export.bin';
