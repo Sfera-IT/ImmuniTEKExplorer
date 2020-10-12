@@ -79,7 +79,7 @@ foreach ($groupObjects as $k => $v) {
 
 I dati di oggi non vanno considerati definitivi fino alla mezzanotte <br />
 Totale TEK caricate dal 29 settembre ad oggi: <?php echo "DA FIXARE" ?> <br />
-Stima notificati dal 29 settembre ad oggi (TEK/10): <?php echo "DA FIXARE" ?> <br />
+Stima positivi dal 29 settembre ad oggi (TEK/14): <?php echo "DA FIXARE" ?> <br />
 Visualizzazioni di questa pagina: <?php echo explode(" ", exec('wc -l ./charthitsnhs.txt'))[0]; ?>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.8.0/Chart.bundle.js"></script>
 <div class="container">
