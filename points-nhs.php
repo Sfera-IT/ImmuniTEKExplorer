@@ -36,7 +36,7 @@ if (!$content || ((new DateTime())->getTimestamp()) - $content['timestamp'] > 86
 
         $finalObj = [
             'y' => count($pbuf->getKeys()),
-            'x' => date('Y-m-d', $pbuf->getEndTimestamp()),
+            'x' => date('Y-m-d', $pbuf->getStartTimestamp()),
         ];
 
         $totKeys += count($pbuf->getKeys());
