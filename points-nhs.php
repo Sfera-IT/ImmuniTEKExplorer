@@ -36,7 +36,7 @@ if (!$content || ((new DateTime())->getTimestamp()) - $content['timestamp'] > 86
 
         $finalObj = [
             'y' => count($pbuf->getKeys()),
-            'x' => date('Y-m-d', $pbuf->getEndTimestamp()),
+            'x' => date('Y-m-d', $pbuf->getStartTimestamp()),
         ];
 
         $totKeys += count($pbuf->getKeys());
@@ -78,8 +78,8 @@ foreach ($groupObjects as $k => $v) {
 <h1>Dati delle TEK dell'app NHS-Covid-19 Inglese</h1>
 
 I dati di oggi non vanno considerati definitivi fino alla mezzanotte <br />
-Totale TEK caricate dal 29 settembre ad oggi: <?php echo $totKeys; ?> <br />
-Stima notificati dal 29 settembre ad oggi (TEK/10): <?php echo $totKeys/10; ?> <br />
+Totale TEK caricate dal 29 settembre ad oggi: <?php echo "DA FIXARE" ?> <br />
+Stima notificati dal 29 settembre ad oggi (TEK/10): <?php echo "DA FIXARE" ?> <br />
 Visualizzazioni di questa pagina: <?php echo explode(" ", exec('wc -l ./charthitsnhs.txt'))[0]; ?>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.8.0/Chart.bundle.js"></script>
 <div class="container">
