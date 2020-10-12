@@ -11,31 +11,45 @@ $objects = [];
 $hit = $_SERVER['REMOTE_ADDR'];
 file_put_contents('./charthitsnhs.txt', $hit."\n", FILE_APPEND);
 $totKeys = 0;
-foreach ($dirNames as $dirName) {
-    $filename = './datanhs/'.$dirName.'/export.bin';
-    $data = "";
 
-    $fp = fopen($filename,"rb");
-    $discard = fread($fp, 12);
-    while (!feof($fp)) {
-        // Read the file, in chunks of 16 byte
-        $data .= fread($fp,16);
+$file = file_get_contents('./cache.json');
+$content = json_decode($file, true);
+
+if (!$content || ($content['timestamp'] - (new DateTime())->getTimestamp()) > 86400) {
+
+    foreach ($dirNames as $dirName) {
+        $filename = './datanhs/'.$dirName.'/export.bin';
+        $data = "";
+
+        $fp = fopen($filename,"rb");
+        $discard = fread($fp, 12);
+        while (!feof($fp)) {
+            // Read the file, in chunks of 16 byte
+            $data .= fread($fp,16);
+        }
+
+
+        $pbuf = new TemporaryExposureKeyExport();
+
+        $stream = new \Google\Protobuf\Internal\CodedInputStream($data);
+        $res = $pbuf->parseFromStream($stream);
+
+        $finalObj = [
+            'y' => count($pbuf->getKeys()),
+            'x' => date('Y-m-d', $pbuf->getEndTimestamp()),
+        ];
+
+        $totKeys += count($pbuf->getKeys());
+
+        $objects[] = $finalObj;
     }
 
-
-    $pbuf = new TemporaryExposureKeyExport();
-
-    $stream = new \Google\Protobuf\Internal\CodedInputStream($data);
-    $res = $pbuf->parseFromStream($stream);
-
-    $finalObj = [
-        'y' => count($pbuf->getKeys()),
-        'x' => date('Y-m-d', $pbuf->getEndTimestamp()),
-    ];
-
-    $totKeys += count($pbuf->getKeys());
-
-    $objects[] = $finalObj;
+    $cache['timestamp'] = (new DateTime())->getTimestamp();
+    $cache['objects'] = $objects;
+    $json = json_encode($cache);
+    file_put_contents('./cache.json', $json);
+} else {
+    $objects = $content['objects'];
 }
 
 $groupObjects = [];
