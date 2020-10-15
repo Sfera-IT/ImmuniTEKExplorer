@@ -78,6 +78,7 @@ foreach ($groupObjects as $k => $v) {
 </head>
 <body>
 <h1>Dati delle TEK dell'app SwissCovid</h1>
+<h2>Attenzione, i dati non vanno considerati affidabili al momento, perchè cambiano giornalmente (e non dovrebbero). Stiamo cercando di capirne il motivo</h2>
 
 I dati di oggi non vanno considerati definitivi fino alla mezzanotte <br />
 Totale TEK caricate dal 19 settembre ad oggi: <?php echo $totKeys;    ?> <br />
