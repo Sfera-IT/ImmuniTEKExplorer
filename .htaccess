@@ -5,3 +5,7 @@
 <Files "charthitsnhs.txt">
   Require all denied
 </Files>
+
+<Files "charthitsch.txt">
+  Require all denied
+</Files>

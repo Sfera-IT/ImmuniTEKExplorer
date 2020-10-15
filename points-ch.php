@@ -1,6 +1,6 @@
 <?php
 require __DIR__ . '/vendor/autoload.php';
-require_once __DIR__ . '/functions-nhs.php';
+require_once __DIR__ . '/functions-ch.php';
 
 downloadNewFiles();
 
@@ -9,16 +9,16 @@ sort($dirNames);
 $objects = [];
 
 $hit = $_SERVER['REMOTE_ADDR'];
-file_put_contents('./charthitsnhs.txt', $hit."\n", FILE_APPEND);
+file_put_contents('./charthitsch.txt', $hit."\n", FILE_APPEND);
 $totKeys = 0;
 
-$file = file_get_contents('./cache-nhs.json');
+$file = file_get_contents('./cache-ch.json');
 $content = json_decode($file, true);
 
 if (!$content || ((new DateTime())->getTimestamp()) - $content['timestamp'] > 86400) {
 
     foreach ($dirNames as $dirName) {
-        $filename = './datanhs/'.$dirName.'/export.bin';
+        $filename = './datach/'.$dirName.'/export.bin';
         $data = "";
 
         $fp = fopen($filename,"rb");
@@ -48,7 +48,7 @@ if (!$content || ((new DateTime())->getTimestamp()) - $content['timestamp'] > 86
     $cache['objects'] = $objects;
     $cache['totKeys'] = $totKeys;
     $json = json_encode($cache);
-    file_put_contents('./cache-nhs.json', $json);
+    file_put_contents('./cache-ch.json', $json);
 } else {
     $objects = $content['objects'];
     $totKeys = $content['totKeys'];
@@ -77,12 +77,12 @@ foreach ($groupObjects as $k => $v) {
 
 </head>
 <body>
-<h1>Dati delle TEK dell'app NHS-Covid-19 Inglese</h1>
+<h1>Dati delle TEK dell'app SwissCovid</h1>
 
 I dati di oggi non vanno considerati definitivi fino alla mezzanotte <br />
-Totale TEK caricate dal 29 settembre ad oggi: <?php echo $totKeys ?> <br />
-Stima positivi dal 29 settembre ad oggi (TEK/14): <?php echo intval($totKeys/14); ?> <br />
-Visualizzazioni di questa pagina: <?php echo explode(" ", exec('wc -l ./charthitsnhs.txt'))[0]; ?>
+Totale TEK caricate dal 19 settembre ad oggi: <?php echo $totKeys;    ?> <br />
+Stima positivi dal 19 settembre ad oggi (TEK/14): <?php echo intval($totKeys/14); ?> <br />
+Visualizzazioni di questa pagina: <?php echo explode(" ", exec('wc -l ./charthitsch.txt'))[0]; ?>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.8.0/Chart.bundle.js"></script>
 <div class="container">
     <canvas id="examChart"></canvas>

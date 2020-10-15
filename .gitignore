@@ -10,3 +10,8 @@ datanhs/
 export.bin
 .DS_Store
 composer.lock
+/cache-ch.json
+/.idea
+/charthitsch.txt
+/datach
+/zipch
