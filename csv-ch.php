@@ -1,6 +1,6 @@
 <?php
 require __DIR__ . '/vendor/autoload.php';
-require_once __DIR__ . '/functions-nhs.php';
+require_once __DIR__ . '/functions-ch.php';
 
 downloadNewFiles();
 
@@ -9,7 +9,7 @@ sort($dirNames);
 $objects = [];
 
 foreach ($dirNames as $dirName) {
-    $filename = './datanhs/'.$dirName.'/export.bin';
+    $filename = './datach/'.$dirName.'/export.bin';
     $data = "";
 
     $fp = fopen($filename,"rb");
@@ -19,6 +19,9 @@ foreach ($dirNames as $dirName) {
         $data .= fread($fp,16);
     }
 
+    if ($dirName == '1602633600000'){
+        echo "";
+    }
 
     $pbuf = new TemporaryExposureKeyExport();
 
