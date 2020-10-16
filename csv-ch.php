@@ -29,6 +29,7 @@ foreach ($dirNames as $dirName) {
     $res = $pbuf->parseFromStream($stream);
 
     $finalObj = [
+        'filename' => $dirName,
         'start_timestamp' => $pbuf->getStartTimestamp(),
         'end_timestamp' => $pbuf->getEndTimestamp(),
         'start_date' => date('Y-m-d H:i:s', $pbuf->getStartTimestamp()),
