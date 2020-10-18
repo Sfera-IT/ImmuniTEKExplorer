@@ -1,0 +1,60 @@
+{
+    "countries": {
+        "it": {            
+            "name": "Italy",
+            "app": "Immuni",
+            "alpha3": "ITA",
+            "active": true,
+            "population": 123,
+            "backgroundColor": [
+                "rgba(255,128,128,0.2)"
+            ],
+            "borderColor": [
+                "rgba(255,128,128,1)"
+            ],
+            "endpoint_list": "https://get.immuni.gov.it/v1/keys/index",
+            "endpoint_files": "https://get.immuni.gov.it/v1/keys/"
+        },
+        "ch": {
+            "name": "Switzerland",
+            "app": "SwissCovid",
+            "alpha3": "CHE",
+            "active": true,
+            "population": 123,
+            "backgroundColor": [
+                "rgba(128,255,128,0.2)"
+            ],
+            "borderColor": [
+                "rgba(128,255,128,1)"
+            ]
+        },
+        "uk": {
+            "name": "United Kingdom",
+            "app": "NHS",
+            "alpha3": "GBR",
+            "active": true,
+            "population": 123,
+            "backgroundColor": [
+                "rgba(128,128,255,0.2)"
+            ],
+            "borderColor": [
+                "rgba(128,128,255,1)"
+            ]
+        },
+        "de": {
+            "name": "Germany",
+            "app": "CoronaWarnApp",
+            "alpha3": "DEU",
+            "active": true,
+            "population": 123,
+            "backgroundColor": [
+                "rgba(255,128,255,0.2)"
+            ],
+            "borderColor": [
+                "rgba(255,128,255,1)"
+            ],
+            "endpoint_list": "https://svc90.main.px.t-online.de/version/v1/diagnosis-keys/country/DE/date",
+            "endpoint_files": "https://svc90.main.px.t-online.de/version/v1/diagnosis-keys/country/DE/date/"
+        }
+    }
+}

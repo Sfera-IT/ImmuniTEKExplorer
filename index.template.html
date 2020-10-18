@@ -1,0 +1,119 @@
+<html>
+<head>
+    <link href="https://fonts.googleapis.com/css2?family=Lato&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.8.0/Chart.bundle.js"></script>
+
+    <style>
+        body
+        {
+            font-family: 'Lato', sans-serif;
+        }
+
+        .docs
+        {
+            box-shadow:0px 0px 0.5em gray;
+            padding:1em;
+            margin:1em;
+        }
+    </style>
+
+</head>
+
+<body>
+    <!--
+I dati di oggi non vanno considerati definitivi fino alla mezzanotte <br />
+Totale TEK caricate dal 18 agosto ad oggi: <?php echo $totKeys; ?> <br />
+Stima positivi dal 18 agosto ad oggi (TEK/14): <?php echo $totKeys/14; ?> <br />
+Visualizzazioni di questa pagina: <?php echo explode(" ", exec('wc -l ./charthits.txt'))[0]; ?>
+-->
+
+<div class="tek">
+    <canvas id="tek"></canvas>
+</div>
+<div class="perc_positive">
+    <canvas id="perc_positive"></canvas>
+</div>
+<div class="new_cases">
+    <canvas id="new_cases"></canvas>
+</div>
+
+
+<div class="docs">    
+    Origine dati:
+    <ul>
+        <li>Parser dei TEK di Immuni, SwissCovid, NHS, CoronaWarnApp</li>
+        <li><a href='https://covid.ourworldindata.org/'>Data on COVID-19 (coronavirus) by <i>Our World in Data</i></a></li>
+    </ul>
+</div>
+
+<div class="docs">
+    Dati che abbiamo raccolto per ogni giorno in ogni paese, per riflettere su correlazioni o grafici da aggiungere:
+    <ul>
+        <li>N. di Tek (da analisi endpoint delle varie app</li>
+        <li>total_cases (da OWID)</li>
+        <li>new_cases (da OWID)</li>
+        <li>total_deaths (da OWID)</li>
+        <li>new_deaths (da OWID)</li>
+    </ul>
+    (ometto dei dati da OWID calcolati come 'smoothed', o '_per_million')
+</div>
+
+
+
+<script>
+    var fullData = "{@data}";
+
+    new Chart(document.getElementById("tek").getContext("2d"), {
+        type: 'line',
+        data: {
+            datasets: fullData["charts"]["tek"]["datasets"]
+        },
+        options: {
+            scales: {
+                xAxes: [{
+                    type: 'time',
+                    time: {
+                        unit: 'day'
+                    }
+                }]
+            }
+        }
+    });    
+
+    new Chart(document.getElementById("perc_positive").getContext("2d"), {
+        type: 'line',
+        data: {
+            datasets: fullData["charts"]["perc_positive"]["datasets"]
+        },
+        options: {
+            scales: {
+                xAxes: [{
+                    type: 'time',
+                    time: {
+                        unit: 'day'
+                    }
+                }]
+            }
+        }
+    });
+
+    new Chart(document.getElementById("new_cases").getContext("2d"), {
+        type: 'line',
+        data: {
+            datasets: fullData["charts"]["new_cases"]["datasets"]
+        },
+        options: {
+            scales: {
+                xAxes: [{
+                    type: 'time',
+                    time: {
+                        unit: 'day'
+                    }
+                }]
+            }
+        }
+    });
+
+</script>
+</body>
+</html>
