@@ -31,7 +31,12 @@ function mylog($v)
 {
     $line = date('r') . " - " . $v . "\n";
     echo $line;
-    file_put_contents("./data2/log.txt", $line, FILE_APPEND | LOCK_EX);
+    file_put_contents(getDataPath() . "log.txt", $line, FILE_APPEND | LOCK_EX);
+}
+
+function getDataPath()
+{
+    return "./data2/";
 }
 
 // ----------------------------
@@ -54,9 +59,9 @@ function downloadNewFilesCh() {
     }
 
     foreach ($files as $remoteName) {        
-        $binPath = './data2/ch/bin/'.$remoteName.'/export.bin';
+        $binPath = getDataPath() . 'ch/bin/'.$remoteName.'/export.bin';
 
-        $zipPath = './data2/ch/zip/'.$remoteName.'.zip';
+        $zipPath = getDataPath() . 'ch/zip/'.$remoteName.'.zip';
         if (!file_exists($zipPath))
         {
             $url = 'https://www.pt.bfs.admin.ch/v1/gaen/exposed/'.$remoteName;
@@ -65,12 +70,12 @@ function downloadNewFilesCh() {
         
             if(file_exists($zipPath))
             {
-                if(!file_exists('./data2/ch/bin/'.$remoteName)) 
+                if(!file_exists(getDataPath() . 'ch/bin/'.$remoteName)) 
                 {
                     $zip = new ZipArchive;
-                    if ($zip->open('./data2/ch/zip/'.$remoteName.'.zip') === TRUE) {
+                    if ($zip->open(getDataPath() . 'ch/zip/'.$remoteName.'.zip') === TRUE) {
                         // Unzip Path
-                        $zip->extractTo('./data2/ch/bin/'.$remoteName);
+                        $zip->extractTo(getDataPath() . 'ch/bin/'.$remoteName);
                         $zip->close();
                     }
                     else
@@ -98,9 +103,9 @@ function downloadNewFilesUk() {
 
 
     foreach ($files as $remoteName) {
-        $binPath = './data2/uk/bin/'.$remoteName.'/export.bin';
+        $binPath = getDataPath() . 'uk/bin/'.$remoteName.'/export.bin';
 
-        $zipPath = './data2/uk/zip/'.$remoteName.'.zip';
+        $zipPath = getDataPath() . 'uk/zip/'.$remoteName.'.zip';
         if (!file_exists($zipPath))
         {
 
@@ -110,12 +115,12 @@ function downloadNewFilesUk() {
         
             if(file_exists($zipPath))
             {
-                if(!file_exists('./data2/uk/bin/'.$remoteName)) 
+                if(!file_exists(getDataPath() . 'uk/bin/'.$remoteName)) 
                 {
                     $zip = new ZipArchive;
-                    if ($zip->open('./data2/uk/zip/'.$remoteName.'.zip') === TRUE) {
+                    if ($zip->open(getDataPath() . 'uk/zip/'.$remoteName.'.zip') === TRUE) {
                         // Unzip Path
-                        $zip->extractTo('./data2/uk/bin/'.$remoteName);
+                        $zip->extractTo(getDataPath() . 'uk/bin/'.$remoteName);
                         $zip->close();
                     }
                 }
@@ -137,7 +142,7 @@ function downloadFiles($countryCode, $countryData)
     {
         mylog("Check " . $fileName);
 
-        $zipPath = "./data2/" . $countryCode . "/zip/" . $fileName . ".zip";        
+        $zipPath = getDataPath() . $countryCode . "/zip/" . $fileName . ".zip";        
         if(file_exists($zipPath))
         {
             // Already exists
@@ -153,7 +158,7 @@ function downloadFiles($countryCode, $countryData)
 
                 mylog("Extract " . $zipPath);
 
-                $extractPath = "./data2/" . $countryCode . "/bin/" . $fileName;
+                $extractPath = getDataPath() . $countryCode . "/bin/" . $fileName;
 
                 $zip = new ZipArchive;
                 if ($zip->open($zipPath) === TRUE) 
@@ -171,13 +176,15 @@ function main()
     $timeStart = microtime(true);
 
     // Reset log
-    file_put_contents("./data2/log.txt","");    
+    file_put_contents(getDataPath() . "log.txt","");    
 
     // Read static JSON data
     $static = jsonDecode(file_get_contents("static.json"));
 
     // Build current JSON data
     $current = array();
+
+    $current["static"] = $static;
 
     // 'days' will contain a map YYYYMMDD=>data, 
     $current["days"] = array();
@@ -189,7 +196,7 @@ function main()
     // Load OWID
     // ----------------------------
 
-    $dataOwidCovidPath = "./data2/owid_" . date("Y-m-d") . ".json";
+    $dataOwidCovidPath = getDataPath() . "owid_" . date("Y-m-d") . ".json";
     $dataOwidCovidRaw = "";
     if(file_exists($dataOwidCovidPath))
     {
@@ -197,7 +204,7 @@ function main()
     }
     else
     {
-        $dataOwidCovidRaw = file_get_contents("https://covid.ourworldindata.org/data2/owid-covid-data.json");
+        $dataOwidCovidRaw = file_get_contents("https://covid.ourworldindata.org/data/owid-covid-data.json");
         file_put_contents($dataOwidCovidPath, $dataOwidCovidRaw);        
     }    
     $dataOwidCovid = jsonDecode($dataOwidCovidRaw);
@@ -215,7 +222,7 @@ function main()
         // OWID data
         // ----------------------------
 
-        file_put_contents("./data2/owid_" . $countryCode . ".json", jsonEncode($dataOwidCovid[$countryData["alpha3"]]));
+        file_put_contents(getDataPath() . "owid_" . $countryCode . ".json", jsonEncode($dataOwidCovid[$countryData["alpha3"]]));
 
         $countryAlpha3 = $countryData["alpha3"];
         foreach($dataOwidCovid[$countryAlpha3]["data"] as $item)
@@ -231,8 +238,8 @@ function main()
 
         mylog("Build data for " . $countryCode);
 
-        @mkdir('./data2/' . $countryCode . '/zip',0777,true);
-        @mkdir('./data2/' . $countryCode . '/bin',0777,true);
+        @mkdir(getDataPath() . $countryCode . '/zip',0777,true);
+        @mkdir(getDataPath() . $countryCode . '/bin',0777,true);
 
         downloadFiles($countryCode, $countryData);
         // Exceptions
@@ -247,7 +254,7 @@ function main()
 
         // Enum step
         // Attenzione: presuppone che siano ordinabili
-        $binPath = './data2/' . $countryCode . '/bin/';
+        $binPath = getDataPath() . $countryCode . '/bin/';
         $dirs = scandir($binPath);
         $dirNames = [];
         foreach ($dirs as $dir) 
@@ -263,7 +270,7 @@ function main()
         // Process TEK
         foreach ($dirNames as $dirName) 
         {
-            $filename = './data2/' . $countryCode . '/bin/'.$dirName.'/export.bin';
+            $filename = getDataPath() . $countryCode . '/bin/'.$dirName.'/export.bin';
 
             mylog("Process file " . $filename);
 
@@ -284,7 +291,9 @@ function main()
             $stream = new \Google\Protobuf\Internal\CodedInputStream($data);
             $res = $pbuf->parseFromStream($stream);
 
-            $d = date('Y-m-d', $pbuf->getEndTimestamp());
+            $dateStart = date('Y-m-d', $pbuf->getStartTimestamp()); 
+            $dateEnd = date('Y-m-d', $pbuf->getEndTimestamp());
+            $d = $dateStart;
             
             if(isset($current["days"][$d][$countryCode]["nTek"]) === false)
                 $current["days"][$d][$countryCode]["nTek"] = 0;
@@ -374,7 +383,7 @@ function main()
         }
     }
 
-    file_put_contents('./data2/current.json', jsonEncode($current));
+    file_put_contents(getDataPath() . '/current.json', jsonEncode($current));
 
     /*
     echo "Final:\n";

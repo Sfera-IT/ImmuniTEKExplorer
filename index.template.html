@@ -1,7 +1,10 @@
 <html>
 <head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
     <link href="https://fonts.googleapis.com/css2?family=Lato&display=swap" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.8.0/Chart.bundle.js"></script>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
 
     <style>
         body
@@ -26,6 +29,10 @@ Totale TEK caricate dal 18 agosto ad oggi: <?php echo $totKeys; ?> <br />
 Stima positivi dal 18 agosto ad oggi (TEK/14): <?php echo $totKeys/14; ?> <br />
 Visualizzazioni di questa pagina: <?php echo explode(" ", exec('wc -l ./charthits.txt'))[0]; ?>
 -->
+
+<div class="chart">
+    <canvas id="chart1"></canvas>
+</div>
 
 <div class="tek">
     <canvas id="tek"></canvas>
@@ -61,8 +68,10 @@ Visualizzazioni di questa pagina: <?php echo explode(" ", exec('wc -l ./charthit
 
 
 <script>
-    var fullData = "{@data}";
 
+
+function buildCharts(fullData)
+{
     new Chart(document.getElementById("tek").getContext("2d"), {
         type: 'line',
         data: {
@@ -113,6 +122,81 @@ Visualizzazioni di questa pagina: <?php echo explode(" ", exec('wc -l ./charthit
             }
         }
     });
+}
+
+function initDatasetCountry(countryData)
+{
+    var dataset = {}
+    dataset.label = countryData.name;
+    dataset.backgroundColor = countryData.backgroundColor;
+    dataset.borderColor = countryData.borderColor;
+    dataset.data = [];
+    dataset.borderWidth = 1;
+    return dataset;
+}
+
+function buildDatasets(chart, data)
+{    
+    for(var countryCode in data.static.countries)
+    {
+        var countryData = data.static.countries[countryCode];
+        console.log(countryData);
+        
+        {
+            // new_cases
+            var dataset = initDatasetCountry(countryData);
+            dataset.label = dataset.label + " New Cases";
+            
+            for(var day in data.days)
+            {
+                if("new_cases" in data.days[day][countryCode])
+                    dataset.data.push({'x':day,'y':data.days[day][countryCode]["new_cases"]})
+            }
+
+            console.log(dataset)
+
+            chart.data.datasets.push(dataset)
+        }
+    }
+
+    chart.update();
+}
+
+function main()
+{
+    var chart1 = new Chart(document.getElementById("chart1").getContext("2d"), {
+        type: 'line',
+        data: {
+            datasets: []
+        },
+        options: {
+            scales: {
+                xAxes: [{
+                    type: 'time',
+                    time: {
+                        unit: 'day'
+                    }
+                }]
+            }
+        }
+    });    
+
+    $.ajax({
+      url: 'data2/current.json',
+      method: 'GET',
+      success: function(data) {
+        console.log(data);
+        buildCharts(data);
+        buildDatasets(chart1, data);
+      },
+      error: function() {
+        console.log('Fail, sorry.');
+      }
+    });
+}
+
+main();
+    
 
 </script>
 </body>
