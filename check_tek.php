@@ -38,6 +38,8 @@ foreach ($dirNames as $dirName) {
 
     $stream = new \Google\Protobuf\Internal\CodedInputStream($data);
     $res = $pbuf->parseFromStream($stream);
+    echo "    startTimestamp: ". $pbuf->getStartTimestamp()." - ".date(DATE_RFC2822, $pbuf->getStartTimestamp())."\n";
+    echo "    endTimestamp: ". $pbuf->getEndTimestamp()." - ".date(DATE_RFC2822, $pbuf->getEndTimestamp())."\n";
 
     /* @var $singleKey TemporaryExposureKey */
     foreach ($pbuf->getKeys() as $singleKey) {
