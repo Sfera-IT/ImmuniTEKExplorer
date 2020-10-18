@@ -188,9 +188,6 @@ function main()
 
     // 'days' will contain a map YYYYMMDD=>data, 
     $current["days"] = array();
-
-    // After population, will be sortered and charts data built.
-    $current["charts"] = array();
     
     // ----------------------------
     // Load OWID
@@ -303,85 +300,6 @@ function main()
 
     // Ensure days sorted
     ksort($current["days"]);
-
-    // ------------
-    // Build charts data
-    // ------------
-
-    // ------------
-    // Build charts data for each country (datasets)
-    // ------------
-
-    foreach($static["countries"] as $countryCode => $countryData)
-    {
-        if($countryData["active"] === false)
-            continue;        
-
-        // Tek chart        
-        {            
-            $dataset = array();
-            $dataset["label"] = $countryData["name"] . " (" . $countryData["app"] . ")";
-            $dataset["data"] = [];
-            $dataset["backgroundColor"] = $countryData["backgroundColor"];
-            $dataset["borderColor"] = $countryData["borderColor"];
-            $dataset["borderWidth"] = 1;
-            
-            foreach($current["days"] as $day => $dayData)
-            {
-                if(isset($dayData[$countryCode]["nTek"]))
-                    $dataset["data"][] = ['x' => $day,'y' => $dayData[$countryCode]["nTek"]];
-            }            
-
-            $current["charts"]["tek"]["datasets"][] = $dataset;
-        }
-
-        // new_cases chart
-        {
-            $dataset = array();
-            $dataset["label"] = $countryData["name"];
-            $dataset["data"] = [];
-            $dataset["backgroundColor"] = $countryData["backgroundColor"];
-            $dataset["borderColor"] = $countryData["borderColor"];
-            $dataset["borderWidth"] = 1;
-            
-            foreach($current["days"] as $day => $dayData)
-            {
-                if(isset($dayData[$countryCode]["new_cases"]))
-                    $dataset["data"][] = ['x' => $day,'y' => $dayData[$countryCode]["new_cases"]];
-            }            
-
-            $current["charts"]["new_cases"]["datasets"][] = $dataset;
-        }
-
-        // % installazioni App (stimato sui positivi)
-        {
-            $dataset = array();
-            $dataset["label"] = $countryData["name"];
-            $dataset["data"] = [];
-            $dataset["backgroundColor"] = $countryData["backgroundColor"];
-            $dataset["borderColor"] = $countryData["borderColor"];
-            $dataset["borderWidth"] = 1;
-
-            foreach($current["days"] as $day => $dayData)
-            {
-                $v = 0;
-                if(isset($dayData[$countryCode]["nTek"]))
-                {
-                    if(isset($dayData[$countryCode]["new_cases"]))
-                    {
-                        $v = 0;
-                        if(floatval($dayData[$countryCode]["new_cases"]) != 0)
-                        {
-                            $v = (100*($dayData[$countryCode]["nTek"]/12)/$dayData[$countryCode]["new_cases"]);                            
-                        }
-                        $dataset["data"][] = ['x' => $day,'y' => $v];
-                    }
-                }
-            }
-
-            $current["charts"]["perc_positive"]["datasets"][] = $dataset;
-        }
-    }
 
     file_put_contents(getDataPath() . '/current.json', jsonEncode($current));
 

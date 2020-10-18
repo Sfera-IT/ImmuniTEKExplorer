@@ -12,6 +12,11 @@
             font-family: 'Lato', sans-serif;
         }
 
+        .toolbar
+        {
+            text-align:center;
+        }
+
         .docs
         {
             box-shadow:0px 0px 0.5em gray;
@@ -30,20 +35,19 @@ Stima positivi dal 18 agosto ad oggi (TEK/14): <?php echo $totKeys/14; ?> <br />
 Visualizzazioni di questa pagina: <?php echo explode(" ", exec('wc -l ./charthits.txt'))[0]; ?>
 -->
 
+<div class="toolbar">
+    <select id="chartType">
+        <option value="tek">Tek</option>
+        <option value="new_cases">New cases</option>
+        <option value="perc_positive_v1">% installation (estimated v1)</option>
+    </select>
+    <div id='chartDesc'>        
+    </div>
+</div>
+
 <div class="chart">
     <canvas id="chart1"></canvas>
 </div>
-
-<div class="tek">
-    <canvas id="tek"></canvas>
-</div>
-<div class="perc_positive">
-    <canvas id="perc_positive"></canvas>
-</div>
-<div class="new_cases">
-    <canvas id="new_cases"></canvas>
-</div>
-
 
 <div class="docs">    
     Origine dati:
@@ -69,60 +73,8 @@ Visualizzazioni di questa pagina: <?php echo explode(" ", exec('wc -l ./charthit
 
 <script>
 
-
-function buildCharts(fullData)
-{
-    new Chart(document.getElementById("tek").getContext("2d"), {
-        type: 'line',
-        data: {
-            datasets: fullData["charts"]["tek"]["datasets"]
-        },
-        options: {
-            scales: {
-                xAxes: [{
-                    type: 'time',
-                    time: {
-                        unit: 'day'
-                    }
-                }]
-            }
-        }
-    });    
-
-    new Chart(document.getElementById("perc_positive").getContext("2d"), {
-        type: 'line',
-        data: {
-            datasets: fullData["charts"]["perc_positive"]["datasets"]
-        },
-        options: {
-            scales: {
-                xAxes: [{
-                    type: 'time',
-                    time: {
-                        unit: 'day'
-                    }
-                }]
-            }
-        }
-    });
-
-    new Chart(document.getElementById("new_cases").getContext("2d"), {
-        type: 'line',
-        data: {
-            datasets: fullData["charts"]["new_cases"]["datasets"]
-        },
-        options: {
-            scales: {
-                xAxes: [{
-                    type: 'time',
-                    time: {
-                        unit: 'day'
-                    }
-                }]
-            }
-        }
-    });
-}
+var data = null;
+var chart = null;
 
 function initDatasetCountry(countryData)
 {
@@ -135,17 +87,51 @@ function initDatasetCountry(countryData)
     return dataset;
 }
 
-function buildDatasets(chart, data)
+function rebuild()
+{
+    var chartType = $('#chartType').val();
+
+    if(chartType == "tek")
+    {
+        $("#chartDesc").text("TEK raccolte dalle App di Contact-Tracing Digitale");
+    }
+    else if(chartType == "new_cases")
+    {
+        $("#chartDesc").text("Nuovi casi");
+    }
+    else if(chartType == "perc_positive_v1")
+    {
+        $("#chartDesc").text("(nTek / 12) inteso come positivi che avevano l'app, in rapporto ai nuovi casi");
+    }
+    
+
+    buildDatasets();
+}
+
+function buildDatasets()
 {    
+    var chartType = $('#chartType').val();
+
+    chart.data.datasets = [];
     for(var countryCode in data.static.countries)
     {
         var countryData = data.static.countries[countryCode];
-        console.log(countryData);
         
-        {
-            // new_cases
+        if(chartType === "tek")
+        {            
             var dataset = initDatasetCountry(countryData);
-            dataset.label = dataset.label + " New Cases";
+            
+            for(var day in data.days)
+            {
+                if("nTek" in data.days[day][countryCode])
+                    dataset.data.push({'x':day,'y':data.days[day][countryCode]["nTek"]})
+            }
+
+            chart.data.datasets.push(dataset)
+        }
+        else if(chartType === "new_cases")
+        {
+            var dataset = initDatasetCountry(countryData);
             
             for(var day in data.days)
             {
@@ -153,7 +139,30 @@ function buildDatasets(chart, data)
                     dataset.data.push({'x':day,'y':data.days[day][countryCode]["new_cases"]})
             }
 
-            console.log(dataset)
+            chart.data.datasets.push(dataset)
+        }
+        else if(chartType === "perc_positive_v1")
+        {
+            var dataset = initDatasetCountry(countryData);
+            
+            for(var day in data.days)
+            {
+                $v = 0;
+                if("nTek" in data.days[day][countryCode]) // Without nTek, don't compute point
+                {
+                    if("new_cases" in data.days[day][countryCode]) // Without new_cases, don't compute point
+                    {
+                        var v=0;
+
+                        if(data.days[day][countryCode]["new_cases"] != 0) // If new_cases==0, compute anyway point
+                        {
+                            v = (100*(data.days[day][countryCode]["nTek"]/12)/data.days[day][countryCode]["new_cases"]);                            
+                        }
+
+                        dataset.data.push({'x':day,'y':v})
+                    }                    
+                }                    
+            }
 
             chart.data.datasets.push(dataset)
         }
@@ -164,7 +173,7 @@ function buildDatasets(chart, data)
 
 function main()
 {
-    var chart1 = new Chart(document.getElementById("chart1").getContext("2d"), {
+    chart = new Chart(document.getElementById("chart1").getContext("2d"), {
         type: 'line',
         data: {
             datasets: []
@@ -179,15 +188,19 @@ function main()
                 }]
             }
         }
-    });    
+    });
+
+    $('#chartType').change(function() {
+        rebuild();
+    })
 
     $.ajax({
       url: 'data2/current.json',
       method: 'GET',
-      success: function(data) {
-        console.log(data);
-        buildCharts(data);
-        buildDatasets(chart1, data);
+      success: function(response) {
+        data = response;
+        console.log(data);        
+        rebuild();
       },
       error: function() {
         console.log('Fail, sorry.');
