@@ -16,7 +16,7 @@ function getDataFileNames($dirToCheck) {
 }
 
 
-$fileNames = getDataFileNames('./data/');
+$fileNames = getDataFileNames('./data2/it/bin/');
 
 $md5Collection = [];
 $fileCollection = [];
@@ -48,7 +48,7 @@ foreach ($fileNames as $filename) {
     }
 
     krsort($md5Collection);
-    $fileCollection[$filename] =  $md5Collection;
+    $fileCollection[date(DATE_RFC2822, $pbuf->getEndTimestamp())] =  $md5Collection;
     $md5Collection = [];
 }
 

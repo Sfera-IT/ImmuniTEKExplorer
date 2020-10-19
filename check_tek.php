@@ -16,7 +16,7 @@ function getDataFileNames($dirToCheck) {
 }
 
 
-$fileNames = getDataFileNames('./data/');
+$fileNames = getDataFileNames('./data2/de/bin/');
 
 $md5Collection = [];
 $revisedCollection = [];
