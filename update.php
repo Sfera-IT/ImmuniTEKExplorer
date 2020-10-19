@@ -1,8 +1,7 @@
 <?php
 
-// @clodo: Questo script fetcha tutte le fonti e popola ./data2/current.json, in modo da separare raccolta/computazione dati dal php che genera visualizzazione (e cacheizzo)
-
-// Questo script gira ogni ora (riga in /etc/crontab). Usate una copia per esperimenti.
+// @clodo: Questo script fetcha tutte le fonti e popola ./data/current.json, in modo da separare raccolta/computazione dati dal php che genera visualizzazione
+// @clodo: Questo script gira ogni ora (riga in /etc/crontab). Usate una copia per esperimenti.
 
 require __DIR__ . '/vendor/autoload.php';
 
@@ -38,18 +37,18 @@ function mylog($v)
 
 function getDataPath()
 {
-    return __DIR__ . "/data2/";
+    return __DIR__ . "/data/";
 }
 
 function downloadFiles($countryCode, $countryData)
 {
     // List of files
     $filesNames = array();
-    if(isset($countryData["endpoint_list"]))
+    if(isset($countryData["tek"]["list"]))
     {
-        if($countryData["endpoint_mode"] === "json-oldest-newest")
+        if($countryData["tek"]["mode"] === "json-oldest-newest")
         {   
-            $rawUrl = $countryData["endpoint_list"];
+            $rawUrl = $countryData["tek"]["list"];
             mylog("Fetch " . $rawUrl . " for list");
             $rawList = file_get_contents($rawUrl);
             $dataList = jsonDecode($rawList);
@@ -61,17 +60,21 @@ function downloadFiles($countryCode, $countryData)
             }
 
             $filesNames = $result;
-        }
-        else if($countryData["endpoint_mode"] === "json-filenames")
+        }        
+        else if($countryData["tek"]["mode"] === "json-filenames")
         {   
-            $rawUrl = $countryData["endpoint_list"];
+            $rawUrl = $countryData["tek"]["list"];
             mylog("Fetch " . $rawUrl . " for list");
             $rawList = file_get_contents($rawUrl);
             $dataList = jsonDecode($rawList);
 
             $filesNames = $dataList;
-        }        
-        else if($countryData["endpoint_mode"] === "swiss")
+        }     
+        else if($countryData["tek"]["mode"] === "json-stoppcorona")
+        {
+            // TODO, json con X batch diversi di raggruppo
+        }
+        else if($countryData["tek"]["mode"] === "swiss")
         {
             $result = array();
             $start_date = date_create('2020-09-19 00:00:00');
@@ -87,7 +90,7 @@ function downloadFiles($countryCode, $countryData)
 
             $filesNames = $result;
         }
-        else if($countryData["endpoint_mode"] === "nhs")
+        else if($countryData["tek"]["mode"] === "nhs")
         {
             $result = array();
             $start_date = date_create('2020-09-29');
@@ -107,34 +110,59 @@ function downloadFiles($countryCode, $countryData)
 
     foreach($filesNames as $fileName)
     {
-        mylog("Check file " . $fileName);
+        mylog("Check file '" . $fileName . "'");
 
-        $zipPath = getDataPath() . $countryCode . "/zip/" . $fileName . ".zip";        
-        if(file_exists($zipPath))
+        $zipPath = getDataPath() . $countryCode . "/zip/" . $fileName . ".zip";
+
+        if( ($countryData["tek"]["redownload"]) || (file_exists($zipPath) === false) )
         {
-            // Already exists
-        }
-        else
-        {   
             usleep(100000); // Un minimo di sleep
 
-            $url = $countryData["endpoint_files"] . $fileName;
+            $url = $countryData["tek"]["files"] . $fileName;
+
             mylog("Download " . $url);
+            
             $fileData = file_get_contents($url);
             if($fileData !== FALSE)
             {
-                file_put_contents($zipPath, $fileData);
-
-                mylog("Extract " . $zipPath);
-
-                $extractPath = getDataPath() . $countryCode . "/bin/" . $fileName;
-
-                $zip = new ZipArchive;
-                if ($zip->open($zipPath) === TRUE) 
+                $needSave = true;
+                if(file_exists($zipPath))
+                {                    
+                    if( (hash("sha256", $fileData)) != (hash("sha256", file_get_contents($zipPath))) )
+                    {
+                        mylog("File changed, resave!");
+                        $needSave = true;                        
+                    }
+                    else
+                    {
+                        mylog("Not changed.");
+                        $needSave = true;
+                    }
+                }
+                else
                 {
-                    $zip->extractTo($extractPath);                
-                    $zip->close();
-                }    
+                    mylog("New file, saved!");
+                    $needSave = true;
+                }
+                
+                if($needSave)
+                {
+                    file_put_contents($zipPath, $fileData);
+
+                    // Extract
+                    $extractPath = getDataPath() . $countryCode . "/bin/" . $fileName;
+                    if(file_exists($extractPath))                    
+                        exec("rm -rf \"" . $extractPath . "\"");
+                    
+                    mylog("Extract in " . $extractPath);
+
+                    $zip = new ZipArchive;
+                    if ($zip->open($zipPath) === TRUE) 
+                    {
+                        $zip->extractTo($extractPath);                
+                        $zip->close();
+                    }
+                }
             }
             else
             {
@@ -170,14 +198,15 @@ function main()
     // Load OWID
     // ----------------------------
 
-    $dataOwidCovidPath = getDataPath() . "owid_" . date("Y-m-d") . ".json";
+    $dataOwidCovidPath = getDataPath() . "owid.json";
     $dataOwidCovidRaw = "";
-    if(file_exists($dataOwidCovidPath))
+    if( (file_exists($dataOwidCovidPath)) && (filemtime($dataOwidCovidPath)>time()-60*60*12) )
     {
         $dataOwidCovidRaw = file_get_contents($dataOwidCovidPath);
     }
     else
     {
+        mylog("Fetch https://covid.ourworldindata.org/data/owid-covid-data.json for OWID data");
         $dataOwidCovidRaw = file_get_contents("https://covid.ourworldindata.org/data/owid-covid-data.json");
         file_put_contents($dataOwidCovidPath, $dataOwidCovidRaw);        
     }    
@@ -212,15 +241,17 @@ function main()
         // Fetch TEK
         // ----------------------------
 
-        mylog("Build data for " . $countryCode . " - " . $countryData["name"]);
+        mylog("----------------");
+        mylog($countryCode . " - " . $countryData["name"]);
+        mylog("----------------");
 
         @mkdir(getDataPath() . $countryCode . '/zip',0777,true);
         @mkdir(getDataPath() . $countryCode . '/bin',0777,true);
 
+        // Download and maintain the data fetched
         downloadFiles($countryCode, $countryData);
         
-        // Enum step
-        // Attenzione: presuppone che siano ordinabili
+        // Enum step - Warning: alphanum sortable expected
         $binPath = getDataPath() . $countryCode . '/bin/';
         $dirs = scandir($binPath);
         $dirNames = [];
@@ -248,8 +279,7 @@ function main()
                 error("Unexpected fail to read " . $filename);
 
             $discard = fread($fp, 12);
-            while (!feof($fp)) {
-                // Read the file, in chunks of 16 byte
+            while (!feof($fp)) {                
                 $data .= fread($fp,16);
             }
 
@@ -275,11 +305,6 @@ function main()
 
     file_put_contents(getDataPath() . '/current.json', jsonEncode($current));
 
-    /*
-    echo "Final:\n";
-    echo jsonEncode($current);
-    echo "\n\n";
-    */
     $timeEnd = microtime(true);
     $timeElapsed = $timeEnd-$timeStart;
     mylog("Done in " . $timeElapsed . " secs");

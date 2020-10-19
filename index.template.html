@@ -10,6 +10,7 @@
         body
         {
             font-family: 'Lato', sans-serif;
+            margin:0.1em;
         }
 
         .toolbar
@@ -19,9 +20,9 @@
 
         .docs, .docs_important
         {
-            box-shadow:0px 0px 0.5em gray;
+            box-shadow:0px 0px 0.1em gray;
             padding:1em;
-            margin:1em;
+            margin:0em;
         }
 
         .docs_important
@@ -84,7 +85,7 @@ Visualizzazioni di questa pagina: <?php echo explode(" ", exec('wc -l ./charthit
 <div class="docs">
     Tech:
     <ul>
-        <li>Il job gira ogni ora. <a href='data2/log.txt'>Ultimo log</a></li>
+        <li>Il job gira ogni ora. <a href='data/log.txt'>Ultimo log</a></li>
     </ul>
 </div>
 
@@ -222,7 +223,7 @@ function main()
     })
 
     $.ajax({
-      url: 'data2/current.json',
+      url: 'data/current.json',
       method: 'GET',
       success: function(response) {
         data = response;
