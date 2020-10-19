@@ -2,6 +2,8 @@
 
 // @clodo: Questo script fetcha tutte le fonti e popola ./data2/current.json, in modo da separare raccolta/computazione dati dal php che genera visualizzazione (e cacheizzo)
 
+// Questo script gira ogni ora (riga in /etc/crontab). Usate una copia per esperimenti.
+
 require __DIR__ . '/vendor/autoload.php';
 
 ini_set('display_errors', 1);
