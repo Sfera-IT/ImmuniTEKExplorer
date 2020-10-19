@@ -19,7 +19,7 @@ function getDataFileNames($dirToCheck) {
 $fileNames = getDataFileNames('./data/');
 
 $md5Collection = [];
-$revisedCollection = [];
+$fileCollection = [];
 foreach ($fileNames as $filename) {
     echo "Processing ".$filename."\n";
     $data = "";
@@ -40,22 +40,27 @@ foreach ($fileNames as $filename) {
 
     /* @var $singleKey TemporaryExposureKey */
     foreach ($pbuf->getKeys() as $singleKey) {
-        $md5 = md5($singleKey->getKeyData());
-        if (!array_key_exists($md5,$md5Collection)) {
-            $md5Collection[$md5] = 1;
+        if (!array_key_exists($singleKey->getRollingStartIntervalNumber(),$md5Collection)) {
+            $md5Collection[$singleKey->getRollingStartIntervalNumber()] = 1;
         } else {
-            $md5Collection[$md5]++;
+            $md5Collection[$singleKey->getRollingStartIntervalNumber()]++;
         }
     }
+
+    krsort($md5Collection);
+    $fileCollection[$filename] =  $md5Collection;
+    $md5Collection = [];
 }
 
-$duplicated = array_filter($md5Collection, function($v) {
-    if ($v > 1)
-        return true;
-    return false;
-});
 
 
-echo "Numero di TEK analizzate: ".count($md5Collection)."\n";
-echo "Numero di TEK duplicate: ".count($duplicated)."\n";
-var_dump($duplicated);
+
+
+foreach ($fileCollection as $kk => $md5Collection) {
+    foreach ($md5Collection as $k => $v) {
+        echo $kk.":".date(DATE_RFC2822, $k*600).": ".$v."\n";
+    }
+    echo "\n\n";
+}
+
+
