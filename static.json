@@ -12,21 +12,25 @@
             "borderColor": [
                 "rgba(255,128,128,1)"
             ],
-            "endpoint_list": "https://get.immuni.gov.it/v1/keys/index",
+            "endpoint_mode": "json-oldest-newest",
+            "endpoint_list": "https://get.immuni.gov.it/v1/keys/index",            
             "endpoint_files": "https://get.immuni.gov.it/v1/keys/"
         },
         "ch": {
             "name": "Switzerland",
             "app": "SwissCovid",
             "alpha3": "CHE",
-            "active": true,
+            "active": false,
             "population": 123,
             "backgroundColor": [
                 "rgba(128,255,128,0.2)"
             ],
             "borderColor": [
                 "rgba(128,255,128,1)"
-            ]
+            ],
+            "endpoint_mode": "swiss",
+            "endpoint_list": "",            
+            "endpoint_files": "https://www.pt.bfs.admin.ch/v1/gaen/exposed/"
         },
         "uk": {
             "name": "United Kingdom",
@@ -39,7 +43,10 @@
             ],
             "borderColor": [
                 "rgba(128,128,255,1)"
-            ]
+            ],
+            "endpoint_mode": "nhs",
+            "endpoint_list": "",            
+            "endpoint_files": "https://distribution-te-prod.prod.svc-test-trace.nhs.uk/distribution/daily/"
         },
         "de": {
             "name": "Germany",
@@ -53,7 +60,8 @@
             "borderColor": [
                 "rgba(255,128,255,1)"
             ],
-            "endpoint_list": "https://svc90.main.px.t-online.de/version/v1/diagnosis-keys/country/DE/date",
+            "endpoint_mode": "json-filenames",
+            "endpoint_list": "https://svc90.main.px.t-online.de/version/v1/diagnosis-keys/country/DE/date",            
             "endpoint_files": "https://svc90.main.px.t-online.de/version/v1/diagnosis-keys/country/DE/date/"
         }
     }

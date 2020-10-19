@@ -36,98 +36,12 @@ function mylog($v)
 
 function getDataPath()
 {
-    return "./data2/";
+    return __DIR__ . "/data2/";
 }
 
 // ----------------------------
 // TEMP da sistemare
 // ----------------------------
-
-
-
-function downloadNewFilesCh() {
-
-    $start_date = date_create('2020-09-19 00:00:00');
-    $new_date = clone $start_date;
-    $new_date_formatted = date_format($new_date, 'Ymd');
-
-    // while not today
-    while ($new_date_formatted != date_format((new DateTime())->modify('+1 day'), 'Ymd')) {
-        $files[] = $new_date->getTimestamp()."000";
-        $new_date->modify('+1 day');
-        $new_date_formatted = date_format($new_date, 'Ymd');
-    }
-
-    foreach ($files as $remoteName) {        
-        $binPath = getDataPath() . 'ch/bin/'.$remoteName.'/export.bin';
-
-        $zipPath = getDataPath() . 'ch/zip/'.$remoteName.'.zip';
-        if (!file_exists($zipPath))
-        {
-            $url = 'https://www.pt.bfs.admin.ch/v1/gaen/exposed/'.$remoteName;
-            $file = file_get_contents($url);
-            file_put_contents($zipPath, $file);
-        
-            if(file_exists($zipPath))
-            {
-                if(!file_exists(getDataPath() . 'ch/bin/'.$remoteName)) 
-                {
-                    $zip = new ZipArchive;
-                    if ($zip->open(getDataPath() . 'ch/zip/'.$remoteName.'.zip') === TRUE) {
-                        // Unzip Path
-                        $zip->extractTo(getDataPath() . 'ch/bin/'.$remoteName);
-                        $zip->close();
-                    }
-                    else
-                    {
-                        error("Unexpected: zip extract file");
-                    }
-                }
-            }
-        }
-    }
-}
-
-function downloadNewFilesUk() {
-
-    $start_date = date_create('2020-09-29');
-    $new_date = clone $start_date;
-    $new_date_formatted = date_format($new_date, 'Ymd');
-
-    // while not today
-    while ($new_date_formatted != date_format((new DateTime())->modify('+1 day'), 'Ymd')) {
-        $files[] = $new_date_formatted."00";
-        $new_date->modify('+1 day');
-        $new_date_formatted = date_format($new_date, 'Ymd');
-    }
-
-
-    foreach ($files as $remoteName) {
-        $binPath = getDataPath() . 'uk/bin/'.$remoteName.'/export.bin';
-
-        $zipPath = getDataPath() . 'uk/zip/'.$remoteName.'.zip';
-        if (!file_exists($zipPath))
-        {
-
-            $url = 'https://distribution-te-prod.prod.svc-test-trace.nhs.uk/distribution/daily/'.$remoteName.'.zip';                        
-            $file = file_get_contents($url);
-            file_put_contents($zipPath, $file);
-        
-            if(file_exists($zipPath))
-            {
-                if(!file_exists(getDataPath() . 'uk/bin/'.$remoteName)) 
-                {
-                    $zip = new ZipArchive;
-                    if ($zip->open(getDataPath() . 'uk/zip/'.$remoteName.'.zip') === TRUE) {
-                        // Unzip Path
-                        $zip->extractTo(getDataPath() . 'uk/bin/'.$remoteName);
-                        $zip->close();
-                    }
-                }
-            }
-        }
-    }
-}
 
 function downloadFiles($countryCode, $countryData)
 {
@@ -135,13 +49,68 @@ function downloadFiles($countryCode, $countryData)
     $filesNames = array();
     if(isset($countryData["endpoint_list"]))
     {
-        $filesNames = json_decode(file_get_contents($countryData["endpoint_list"]));
+        if($countryData["endpoint_mode"] === "json-oldest-newest")
+        {   
+            $rawUrl = $countryData["endpoint_list"];
+            mylog("Fetch " . $rawUrl . " for list");
+            $rawList = file_get_contents($rawUrl);
+            $dataList = jsonDecode($rawList);
+
+            $result = array();
+            for($i=$dataList["oldest"];$i<$dataList["newest"];$i++)
+            {
+                $result[] = $i;
+            }
+
+            $filesNames = $result;
+        }
+        else if($countryData["endpoint_mode"] === "json-filenames")
+        {   
+            $rawUrl = $countryData["endpoint_list"];
+            mylog("Fetch " . $rawUrl . " for list");
+            $rawList = file_get_contents($rawUrl);
+            $dataList = jsonDecode($rawList);
+
+            $filesNames = $dataList;
+        }        
+        else if($countryData["endpoint_mode"] === "swiss")
+        {
+            $result = array();
+            $start_date = date_create('2020-09-19 00:00:00');
+            $new_date = clone $start_date;
+            $new_date_formatted = date_format($new_date, 'Ymd');
+
+            // while not today
+            while ($new_date_formatted != date_format((new DateTime())->modify('+1 day'), 'Ymd')) {
+                $result[] = $new_date->getTimestamp()."000";
+                $new_date->modify('+2 hour');
+                $new_date_formatted = date_format($new_date, 'Ymd');
+            }
+
+            $filesNames = $result;
+        }
+        else if($countryData["endpoint_mode"] === "nhs")
+        {
+            $result = array();
+            $start_date = date_create('2020-09-29');
+            $new_date = clone $start_date;
+            $new_date_formatted = date_format($new_date, 'Ymd');
+
+            // while not today
+            while ($new_date_formatted != date_format((new DateTime())->modify('+1 day'), 'Ymd')) {
+                $result[] = $new_date_formatted."00";
+                $new_date->modify('+1 day');
+                $new_date_formatted = date_format($new_date, 'Ymd');
+            }
+
+            $filesNames = $result;
+        }
     }
 
     foreach($filesNames as $fileName)
     {
-        mylog("Check " . $fileName);
-
+        mylog("Check file " . $fileName);
+        
         $zipPath = getDataPath() . $countryCode . "/zip/" . $fileName . ".zip";        
         if(file_exists($zipPath))
         {
@@ -167,6 +136,10 @@ function downloadFiles($countryCode, $countryData)
                     $zip->close();
                 }    
             }
+            else
+            {
+                mylog("Download failed.");
+            }
         }
     }
 }
@@ -175,11 +148,12 @@ function main()
 {
     $timeStart = microtime(true);
 
-    // Reset log
+    // Reset log    
     file_put_contents(getDataPath() . "log.txt","");    
+    mylog("Log path:" . getDataPath() . "log.txt");
 
     // Read static JSON data
-    $static = jsonDecode(file_get_contents("static.json"));
+    $static = jsonDecode(file_get_contents(__DIR__ . "/static.json"));
 
     // Build current JSON data
     $current = array();
@@ -233,7 +207,7 @@ function main()
         // Fetch TEK
         // ----------------------------
 
-        mylog("Build data for " . $countryCode);
+        mylog("Build data for " . $countryCode . " - " . $countryData["name"]);
 
         @mkdir(getDataPath() . $countryCode . '/zip',0777,true);
         @mkdir(getDataPath() . $countryCode . '/bin',0777,true);
@@ -242,11 +216,11 @@ function main()
         // Exceptions
         if($countryCode === "ch")
         {
-            downloadNewFilesCh();
+            //downloadNewFilesCh();
         }
         else if($countryCode === "uk")
         {
-            downloadNewFilesUk();
+            //downloadNewFilesUk();
         }
 
         // Enum step
@@ -290,7 +264,9 @@ function main()
 
             $dateStart = date('Y-m-d', $pbuf->getStartTimestamp()); 
             $dateEnd = date('Y-m-d', $pbuf->getEndTimestamp());
-            $d = $dateStart;
+            $d = date('Y-m-d', $pbuf->getEndTimestamp());
+
+            mylog("Tek: File:" . $filename . ", TimeStart:" . date('r', $pbuf->getStartTimestamp()) . ", TimeEnd:" . date('r', $pbuf->getEndTimestamp()));
             
             if(isset($current["days"][$d][$countryCode]["nTek"]) === false)
                 $current["days"][$d][$countryCode]["nTek"] = 0;

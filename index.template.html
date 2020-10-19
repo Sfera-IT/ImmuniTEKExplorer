@@ -69,6 +69,9 @@ Visualizzazioni di questa pagina: <?php echo explode(" ", exec('wc -l ./charthit
     (ometto dei dati da OWID calcolati come 'smoothed', o '_per_million')
 </div>
 
+<div class="docs">    
+</div>
+
 
 
 <script>
@@ -116,6 +119,9 @@ function buildDatasets()
     for(var countryCode in data.static.countries)
     {
         var countryData = data.static.countries[countryCode];
+
+        if(countryData.active == false)
+            continue;
         
         if(chartType === "tek")
         {            
