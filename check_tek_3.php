@@ -16,7 +16,7 @@ function getDataFileNames($dirToCheck) {
 }
 
 
-$fileNames = getDataFileNames('./data2/it/bin/');
+$fileNames = getDataFileNames('./data2/uk/bin/');
 
 $md5Collection = [];
 $fileCollection = [];
@@ -55,12 +55,23 @@ foreach ($fileNames as $filename) {
 
 
 
-
+$mediaTotale = 0;
+$giriTotali = 0;
 foreach ($fileCollection as $kk => $md5Collection) {
+    $tot = 0;
+    $first = 0;
     foreach ($md5Collection as $k => $v) {
+        if ($first == 0)
+            $first = $v;
         echo $kk.":".date(DATE_RFC2822, $k*600).": ".$v."\n";
+        $tot += $v;
     }
+    echo "media:".$tot/$first."\n";
     echo "\n\n";
+    $giriTotali++;
+    $mediaTotale += $tot / $first;
 }
+
+echo "Media totale: ". $mediaTotale / $giriTotali;
 
 
