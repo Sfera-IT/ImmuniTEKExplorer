@@ -17,11 +17,17 @@
             text-align:center;
         }
 
-        .docs
+        .docs, .docs_important
         {
             box-shadow:0px 0px 0.5em gray;
             padding:1em;
             margin:1em;
+        }
+
+        .docs_important
+        {
+            text-align:center;
+            background-color:#ffffaa;            
         }
     </style>
 
@@ -47,6 +53,12 @@ Visualizzazioni di questa pagina: <?php echo explode(" ", exec('wc -l ./charthit
 
 <div class="chart">
     <canvas id="chart1"></canvas>
+</div>
+
+<div class="docs_important">
+    Questo progetto è in sviluppo attivo/studio, dati NON affidabili.
+    <br>
+    I dati SwissCovid sono di certo errati, abbiamo problemi a recuperare tutti i TEK.
 </div>
 
 <div class="docs">    
@@ -125,7 +137,7 @@ function buildDatasets()
         var countryData = data.static.countries[countryCode];
 
         if(countryData.active == false)
-            continue;
+            continue;        
         
         if(chartType === "tek")
         {            
@@ -133,8 +145,9 @@ function buildDatasets()
             
             for(var day in data.days)
             {
-                if("nTek" in data.days[day][countryCode])
-                    dataset.data.push({'x':day,'y':data.days[day][countryCode]["nTek"]})
+                if(countryCode in data.days[day])
+                    if("nTek" in data.days[day][countryCode])
+                        dataset.data.push({'x':day,'y':data.days[day][countryCode]["nTek"]})
             }
 
             chart.data.datasets.push(dataset)
@@ -145,8 +158,9 @@ function buildDatasets()
             
             for(var day in data.days)
             {
-                if("new_cases" in data.days[day][countryCode])
-                    dataset.data.push({'x':day,'y':data.days[day][countryCode]["new_cases"]})
+                if(countryCode in data.days[day])
+                    if("new_cases" in data.days[day][countryCode])
+                        dataset.data.push({'x':day,'y':data.days[day][countryCode]["new_cases"]})
             }
 
             chart.data.datasets.push(dataset)
@@ -158,20 +172,23 @@ function buildDatasets()
             for(var day in data.days)
             {
                 $v = 0;
-                if("nTek" in data.days[day][countryCode]) // Without nTek, don't compute point
+                if(countryCode in data.days[day])
                 {
-                    if("new_cases" in data.days[day][countryCode]) // Without new_cases, don't compute point
+                    if("nTek" in data.days[day][countryCode]) // Without nTek, don't compute point
                     {
-                        var v=0;
-
-                        if(data.days[day][countryCode]["new_cases"] != 0) // If new_cases==0, compute anyway point
+                        if("new_cases" in data.days[day][countryCode]) // Without new_cases, don't compute point
                         {
-                            v = (100*(data.days[day][countryCode]["nTek"]/12)/data.days[day][countryCode]["new_cases"]);                            
-                        }
+                            var v=0;
 
-                        dataset.data.push({'x':day,'y':v})
+                            if(data.days[day][countryCode]["new_cases"] != 0) // If new_cases==0, compute anyway point
+                            {
+                                v = (100*(data.days[day][countryCode]["nTek"]/12)/data.days[day][countryCode]["new_cases"]);                            
+                            }
+
+                            dataset.data.push({'x':day,'y':v})
+                        }                    
                     }                    
-                }                    
+                }
             }
 
             chart.data.datasets.push(dataset)

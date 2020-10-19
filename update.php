@@ -41,10 +41,6 @@ function getDataPath()
     return __DIR__ . "/data2/";
 }
 
-// ----------------------------
-// TEMP da sistemare
-// ----------------------------
-
 function downloadFiles($countryCode, $countryData)
 {
     // List of files
@@ -85,7 +81,7 @@ function downloadFiles($countryCode, $countryData)
             // while not today
             while ($new_date_formatted != date_format((new DateTime())->modify('+1 day'), 'Ymd')) {
                 $result[] = $new_date->getTimestamp()."000";
-                $new_date->modify('+2 hour');
+                $new_date->modify('+1 day');
                 $new_date_formatted = date_format($new_date, 'Ymd');
             }
 
@@ -112,14 +108,16 @@ function downloadFiles($countryCode, $countryData)
     foreach($filesNames as $fileName)
     {
         mylog("Check file " . $fileName);
-        
+
         $zipPath = getDataPath() . $countryCode . "/zip/" . $fileName . ".zip";        
         if(file_exists($zipPath))
         {
             // Already exists
         }
         else
-        {            
+        {   
+            usleep(100000); // Un minimo di sleep
+
             $url = $countryData["endpoint_files"] . $fileName;
             mylog("Download " . $url);
             $fileData = file_get_contents($url);
@@ -156,6 +154,9 @@ function main()
 
     // Read static JSON data
     $static = jsonDecode(file_get_contents(__DIR__ . "/static.json"));
+
+    if(isset($static["countries"]) === false)
+        error("Fatal error, unable to read static.json?");
 
     // Build current JSON data
     $current = array();
@@ -198,6 +199,8 @@ function main()
         file_put_contents(getDataPath() . "owid_" . $countryCode . ".json", jsonEncode($dataOwidCovid[$countryData["alpha3"]]));
 
         $countryAlpha3 = $countryData["alpha3"];
+        if(isset($dataOwidCovid[$countryAlpha3]) === false)
+            error("Fatal error: " . $countryAlpha3 . " not found in OWID data");
         foreach($dataOwidCovid[$countryAlpha3]["data"] as $item)
         {
             $d = $item["date"];
@@ -215,16 +218,7 @@ function main()
         @mkdir(getDataPath() . $countryCode . '/bin',0777,true);
 
         downloadFiles($countryCode, $countryData);
-        // Exceptions
-        if($countryCode === "ch")
-        {
-            //downloadNewFilesCh();
-        }
-        else if($countryCode === "uk")
-        {
-            //downloadNewFilesUk();
-        }
-
+        
         // Enum step
         // Attenzione: presuppone che siano ordinabili
         $binPath = getDataPath() . $countryCode . '/bin/';
@@ -268,7 +262,7 @@ function main()
             $dateEnd = date('Y-m-d', $pbuf->getEndTimestamp());
             $d = date('Y-m-d', $pbuf->getEndTimestamp());
 
-            mylog("Tek: File:" . $filename . ", TimeStart:" . date('r', $pbuf->getStartTimestamp()) . ", TimeEnd:" . date('r', $pbuf->getEndTimestamp()));
+            mylog("Tek: File:" . $filename . ", TimeStart:" . date('r', $pbuf->getStartTimestamp()) . ", TimeEnd:" . date('r', $pbuf->getEndTimestamp()) . ", Keys:" . count($pbuf->getKeys()));
             
             if(isset($current["days"][$d][$countryCode]["nTek"]) === false)
                 $current["days"][$d][$countryCode]["nTek"] = 0;
