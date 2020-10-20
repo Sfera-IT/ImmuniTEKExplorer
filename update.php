@@ -388,10 +388,10 @@ function main()
                 //echo jsonEncode($sha256,true) . "\n";
                 //echo jsonEncode($rollingStartIntervalNumber,true) . "\n";
                 //echo jsonEncode($rollingPeriod,true) . "\n";
-                
-                mylog("Key: " . $sha256 . " - Period: " . $rollingPeriod . " - Time: " . date('r', $keyTime));
 
                 $keyTime = $rollingStartIntervalNumber*10*60;
+                
+                //mylog("Key: " . $sha256 . " - Period: " . $rollingPeriod . " - Time: " . date('r', $keyTime));
             }
             
             if(isset($current["days"][$d][$countryCode]["nTek"]) === false)
