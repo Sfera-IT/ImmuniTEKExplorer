@@ -40,6 +40,87 @@ function getDataPath()
     return __DIR__ . "/data/";
 }
 
+// Generic fetch with log
+function fetchUrl($url, $post = null, $options = array())
+{
+    $result = fetchUrlEx($url, $post, $options);
+
+    $error = "";
+
+    if($result["error"] !== 0)
+        $error = $result["error"];
+    else if($result["info"]["http_code"] !== 200)
+        $error = "HTTP " . $result["info"]["http_code"];
+    
+    if($error !== "")
+    {
+        mylog("Fetch " . $url . " failed: " . $error);
+        return null;
+    }
+    else
+    {
+        $data = $result["body"];
+        mylog("Fetch " . $url . " ok, " . strlen($data) . " bytes");
+        return $data;
+    }
+}
+
+function fetchUrlEx($url, $post = null, $options = array())
+{
+    $timeout = 120;
+    if(isset($options["timeout"]))
+        $timeout = $options["timeout"];
+    
+    $curl = curl_init($url);
+
+    $curlOptions = array(
+        CURLOPT_RETURNTRANSFER => true,     // return web page
+        CURLOPT_HEADER         => true,    // don't return headers
+        CURLOPT_FOLLOWLOCATION => true,     // follow redirects
+        CURLOPT_ENCODING       => "",       // handle all encodings
+        CURLOPT_USERAGENT      => "spider", // who am i
+        CURLOPT_AUTOREFERER    => true,     // set referer on redirect
+        CURLOPT_CONNECTTIMEOUT => $timeout,      // timeout on connect
+        CURLOPT_TIMEOUT        => $timeout,      // timeout on response
+        CURLOPT_MAXREDIRS      => 10,       // stop after 10 redirects
+    );
+
+    curl_setopt_array($curl, $curlOptions );
+
+    if(isset($options["resolve"]))
+        curl_setopt($curl, CURLOPT_RESOLVE, $options["resolve"]);
+
+    if( (isset($options["verify"])) && ($options["verify"] === false) )
+    {
+        curl_setopt($curl, CURLOPT_SSL_VERIFYHOST, false); 
+        curl_setopt($curl, CURLOPT_SSL_VERIFYPEER, false);
+    }
+    
+    if($post != null)
+        curl_setopt($curl, CURLOPT_POSTFIELDS, http_build_query($post));
+
+    $response = curl_exec($curl);
+    
+    $header_size = curl_getinfo($curl, CURLINFO_HEADER_SIZE);
+    
+    $result = array();
+    $result["error"] = curl_errno($curl);
+    $result["error_message"] = curl_error($curl);
+    $result["info"] = curl_getinfo($curl);
+    $result["headers"] = array();
+    foreach(explode("\n", substr($response, 0, $header_size)) as $headerLine)
+    {
+        $posDoubleDot = strpos($headerLine,":");
+        if($posDoubleDot !== false)
+            $result["headers"][trim(strtolower(substr($headerLine,0,$posDoubleDot)))] = trim(substr($headerLine,$posDoubleDot+1));
+    }
+    $result["body"] = substr($response, $header_size);
+    
+    curl_close($curl);
+    
+    return $result;
+}
+
 function downloadFiles($countryCode, $countryData)
 {
     // List of files
@@ -49,26 +130,32 @@ function downloadFiles($countryCode, $countryData)
         if($countryData["tek"]["mode"] === "json-oldest-newest")
         {   
             $rawUrl = $countryData["tek"]["list"];
-            mylog("Fetch " . $rawUrl . " for list");
-            $rawList = file_get_contents($rawUrl);
-            $dataList = jsonDecode($rawList);
-
-            $result = array();
-            for($i=$dataList["oldest"];$i<$dataList["newest"];$i++)
+            mylog("Fetch for list");
+            $rawList = fetchUrl($rawUrl);
+            if($rawList !== null)
             {
-                $result[] = $i;
-            }
+                $dataList = jsonDecode($rawList);
 
-            $filesNames = $result;
+                $result = array();
+                for($i=$dataList["oldest"];$i<$dataList["newest"];$i++)
+                {
+                    $result[] = $i;
+                }
+
+                $filesNames = $result;
+            }
         }        
         else if($countryData["tek"]["mode"] === "json-filenames")
         {   
             $rawUrl = $countryData["tek"]["list"];
-            mylog("Fetch " . $rawUrl . " for list");
-            $rawList = file_get_contents($rawUrl);
-            $dataList = jsonDecode($rawList);
+            mylog("Fetch for list");
+            $rawList = fetchUrl($rawUrl);
+            if($rawList !== null)
+            {
+                $dataList = jsonDecode($rawList);
 
-            $filesNames = $dataList;
+                $filesNames = $dataList;
+            }
         }     
         else if($countryData["tek"]["mode"] === "json-stoppcorona")
         {
@@ -99,7 +186,7 @@ function downloadFiles($countryCode, $countryData)
 
             // while not today
             while ($new_date_formatted != date_format((new DateTime())->modify('+1 day'), 'Ymd')) {
-                $result[] = $new_date_formatted."00";
+                $result[] = $new_date_formatted . "00.zip";
                 $new_date->modify('+1 day');
                 $new_date_formatted = date_format($new_date, 'Ymd');
             }
@@ -120,18 +207,18 @@ function downloadFiles($countryCode, $countryData)
 
             $url = $countryData["tek"]["files"] . $fileName;
 
-            mylog("Download " . $url);
-            
-            $fileData = file_get_contents($url);
-            if($fileData !== FALSE)
+            $fileData = fetchUrl($url);
+            if($fileData !== null)
             {
                 $needSave = true;
                 if(file_exists($zipPath))
                 {                    
-                    if( (hash("sha256", $fileData)) != (hash("sha256", file_get_contents($zipPath))) )
+                    $hashN = (hash("sha256", $fileData));
+                    $hashO = (hash("sha256", file_get_contents($zipPath)));
+                    if( $hashN != $hashO )
                     {
                         mylog("File changed, resave!");
-                        $needSave = true;                        
+                        $needSave = true;   
                     }
                     else
                     {
@@ -163,11 +250,7 @@ function downloadFiles($countryCode, $countryData)
                         $zip->close();
                     }
                 }
-            }
-            else
-            {
-                mylog("Download failed.");
-            }
+            }            
         }
     }
 }
@@ -206,9 +289,12 @@ function main()
     }
     else
     {
-        mylog("Fetch https://covid.ourworldindata.org/data/owid-covid-data.json for OWID data");
-        $dataOwidCovidRaw = file_get_contents("https://covid.ourworldindata.org/data/owid-covid-data.json");
-        file_put_contents($dataOwidCovidPath, $dataOwidCovidRaw);        
+        mylog("Fetch OWID data");
+        $dataOwidCovidRaw = fetchUrl("https://covid.ourworldindata.org/data/owid-covid-data.json");
+        if($dataOwidCovidRaw !== null)
+        {
+            file_put_contents($dataOwidCovidPath, $dataOwidCovidRaw);        
+        }
     }    
     $dataOwidCovid = jsonDecode($dataOwidCovidRaw);
 
@@ -266,11 +352,10 @@ function main()
         sort($dirNames);
 
         // Process TEK
+        mylog("TEK analysis");
         foreach ($dirNames as $dirName) 
         {
             $filename = getDataPath() . $countryCode . '/bin/'.$dirName.'/export.bin';
-
-            mylog("Process file " . $filename);
 
             $data = "";
 
@@ -293,6 +378,21 @@ function main()
             $d = date('Y-m-d', $pbuf->getEndTimestamp());
 
             mylog("Tek: File:" . $filename . ", TimeStart:" . date('r', $pbuf->getStartTimestamp()) . ", TimeEnd:" . date('r', $pbuf->getEndTimestamp()) . ", Keys:" . count($pbuf->getKeys()));
+
+            foreach ($pbuf->getKeys() as $singleKey) {                
+                $sha256 = hash('sha256',$singleKey->getKeyData());                
+
+                $rollingStartIntervalNumber = $singleKey->getRollingStartIntervalNumber();
+                $rollingPeriod = $singleKey->getRollingPeriod();
+
+                //echo jsonEncode($sha256,true) . "\n";
+                //echo jsonEncode($rollingStartIntervalNumber,true) . "\n";
+                //echo jsonEncode($rollingPeriod,true) . "\n";
+                
+                mylog("Key: " . $sha256 . " - Period: " . $rollingPeriod . " - Time: " . date('r', $keyTime));
+
+                $keyTime = $rollingStartIntervalNumber*10*60;
+            }
             
             if(isset($current["days"][$d][$countryCode]["nTek"]) === false)
                 $current["days"][$d][$countryCode]["nTek"] = 0;

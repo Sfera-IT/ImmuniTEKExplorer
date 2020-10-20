@@ -4,7 +4,7 @@
             "name": "Spain",
             "app": "RadarCovid",
             "alpha3": "ESP",
-            "active": true,
+            "active": false,
             "population": 123,
             "backgroundColor": [
                 "rgba(128,255,255,0.2)"
