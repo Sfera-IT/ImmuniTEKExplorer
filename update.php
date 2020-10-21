@@ -361,6 +361,8 @@ function main()
 
     file_put_contents(getDataPath() . '/current.json', jsonEncode($current));
 
+    mylog("Total keys in DB: " . jsonEncode(fetchSql($db, "select k_source,count(*) from tek_keys")));
+
     if($db !== null)
         mysqli_close($db);
 

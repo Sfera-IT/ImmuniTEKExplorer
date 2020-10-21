@@ -1,3 +1,9 @@
+CREATE DATABASE "tekexplorer";
+
+CREATE USER 'tekexplorer'@localhost IDENTIFIED BY 'xxx';
+
+GRANT ALL PRIVILEGES ON *.* TO 'tekexplorer'@localhost IDENTIFIED BY 'xxx';
+
 CREATE TABLE `tek_keys` (
   `k_id` varchar(64) NOT NULL,
   `k_source` varchar(20) DEFAULT NULL,
