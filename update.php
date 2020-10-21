@@ -37,7 +37,7 @@ function mylog($v)
 
 function getDataPath()
 {
-    return __DIR__ . "/data/";
+    return __DIR__."/data/";
 }
 
 // Generic fetch with log

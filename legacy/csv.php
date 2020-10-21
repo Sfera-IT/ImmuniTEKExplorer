@@ -1,6 +1,6 @@
 <?php
-require __DIR__ . '/vendor/autoload.php';
-require_once __DIR__ . '/functions-nhs.php';
+require __DIR__.'/vendor/autoload.php';
+require_once __DIR__.'/functions.php';
 
 downloadNewFiles();
 
@@ -9,7 +9,7 @@ sort($dirNames);
 $objects = [];
 
 foreach ($dirNames as $dirName) {
-    $filename = './datanhs/'.$dirName.'/export.bin';
+    $filename = './data/'.$dirName.'/export.bin';
     $data = "";
 
     $fp = fopen($filename,"rb");

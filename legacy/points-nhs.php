@@ -1,6 +1,6 @@
 <?php
-require __DIR__ . '/vendor/autoload.php';
-require_once __DIR__ . '/functions.php';
+require __DIR__.'/vendor/autoload.php';
+require_once __DIR__.'/functions-nhs.php';
 
 downloadNewFiles();
 
@@ -9,33 +9,49 @@ sort($dirNames);
 $objects = [];
 
 $hit = $_SERVER['REMOTE_ADDR'];
-file_put_contents('./charthits.txt', $hit."\n", FILE_APPEND);
+file_put_contents('./charthitsnhs.txt', $hit."\n", FILE_APPEND);
 $totKeys = 0;
-foreach ($dirNames as $dirName) {
-    $filename = './data/'.$dirName.'/export.bin';
-    $data = "";
 
-    $fp = fopen($filename,"rb");
-    $discard = fread($fp, 12);
-    while (!feof($fp)) {
-        // Read the file, in chunks of 16 byte
-        $data .= fread($fp,16);
+$file = file_get_contents('./cache-nhs.json');
+$content = json_decode($file, true);
+
+if (!$content || ((new DateTime())->getTimestamp()) - $content['timestamp'] > 86400) {
+
+    foreach ($dirNames as $dirName) {
+        $filename = './datanhs/'.$dirName.'/export.bin';
+        $data = "";
+
+        $fp = fopen($filename,"rb");
+        $discard = fread($fp, 12);
+        while (!feof($fp)) {
+            // Read the file, in chunks of 16 byte
+            $data .= fread($fp,16);
+        }
+
+
+        $pbuf = new TemporaryExposureKeyExport();
+
+        $stream = new \Google\Protobuf\Internal\CodedInputStream($data);
+        $res = $pbuf->parseFromStream($stream);
+
+        $finalObj = [
+            'y' => count($pbuf->getKeys()),
+            'x' => date('Y-m-d', $pbuf->getStartTimestamp()),
+        ];
+
+        $totKeys += count($pbuf->getKeys());
+
+        $objects[] = $finalObj;
     }
 
-
-    $pbuf = new TemporaryExposureKeyExport();
-
-    $stream = new \Google\Protobuf\Internal\CodedInputStream($data);
-    $res = $pbuf->parseFromStream($stream);
-
-    $finalObj = [
-        'y' => count($pbuf->getKeys()),
-        'x' => date('Y-m-d', $pbuf->getEndTimestamp()),
-    ];
-
-    $totKeys += count($pbuf->getKeys());
-
-    $objects[] = $finalObj;
+    $cache['timestamp'] = (new DateTime())->getTimestamp();
+    $cache['objects'] = $objects;
+    $cache['totKeys'] = $totKeys;
+    $json = json_encode($cache);
+    file_put_contents('./cache-nhs.json', $json);
+} else {
+    $objects = $content['objects'];
+    $totKeys = $content['totKeys'];
 }
 
 $groupObjects = [];
@@ -61,10 +77,13 @@ foreach ($groupObjects as $k => $v) {
 
 </head>
 <body>
+<h1>Dati delle TEK dell'app NHS-Covid-19 Inglese</h1>
+<h2>Attenzione, i dati di UK e Svizzera non vanno considerati affidabili al momento, perchè cambiano giornalmente (e per quanto ne so, non dovrebbero). Stiamo cercando di capirne il motivo</h2>
+
 I dati di oggi non vanno considerati definitivi fino alla mezzanotte <br />
-Totale TEK caricate dal 18 agosto ad oggi: <?php echo $totKeys; ?> <br />
-Stima positivi dal 18 agosto ad oggi (TEK/14): <?php echo $totKeys/14; ?> <br />
-Visualizzazioni di questa pagina: <?php echo explode(" ", exec('wc -l ./charthits.txt'))[0]; ?>
+Totale TEK caricate dal 29 settembre ad oggi: <?php echo $totKeys ?> <br />
+Stima positivi dal 29 settembre ad oggi (TEK/14): <?php echo intval($totKeys/14); ?> <br />
+Visualizzazioni di questa pagina: <?php echo explode(" ", exec('wc -l ./charthitsnhs.txt'))[0]; ?>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.8.0/Chart.bundle.js"></script>
 <div class="container">
     <canvas id="examChart"></canvas>
