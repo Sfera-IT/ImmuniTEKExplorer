@@ -156,7 +156,9 @@ function main()
     mylog("Log path:" . getDataPath() . "log.txt");
 
     // DB
-    $db = dbConnect($config["db"]["host"], $config["db"]["name"], $config["db"]["user"], $config["db"]["password"]);
+    $db = null;
+    if(isset($config["db"]))
+        $db = dbConnect($config["db"]["host"], $config["db"]["name"], $config["db"]["user"], $config["db"]["password"]);
 
     // Read static JSON data
     $static = jsonDecode(file_get_contents(__DIR__ . "/static.json"));
@@ -298,7 +300,7 @@ function main()
                 
                 //mylog("Key: " . $id . " - Period: " . $rollingPeriod . " - Time: " . date('r', $keyTime));
 
-                if(isset($config["db"]))
+                if($db !== null)
                 {
                     $rowCurrent = fetchSqlRowNull($db, "select k_id from tek_keys where k_id='" . escapeSql2($db, $id) . "'");
                     if($rowCurrent === null)
@@ -330,7 +332,7 @@ function main()
     }
 
     // FullDB!
-    if(isset($config["db"]))
+    if($db !== null)
     {
         $timeFrom = time()-60*60*24*30;
         $timeTo = time();
@@ -343,8 +345,7 @@ function main()
         $sql .= " where";
         $sql .= " k_date>=" . escapeSqlNum($timeFrom) . " and k_date<" . escapeSqlNum($timeTo);
         $sql .= " group by Date_FORMAT(from_unixtime(k_date), '%Y-%m-%d'), k_source;";
-        $keys = fetchSql($db, $sql);
-        echo jsonEncode($keys, true);
+        $keys = fetchSql($db, $sql);        
         foreach($keys as $key)
         {
             //$d = date('Y-m-d', $keys["gdate"];
@@ -360,7 +361,8 @@ function main()
 
     file_put_contents(getDataPath() . '/current.json', jsonEncode($current));
 
-    mysqli_close($db);
+    if($db !== null)
+        mysqli_close($db);
 
     $timeEnd = microtime(true);
     $timeElapsed = $timeEnd-$timeStart;
