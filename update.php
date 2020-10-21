@@ -75,7 +75,7 @@ function downloadFiles($countryCode, $countryData)
 
             // while not today
             while ($new_date_formatted != date_format((new DateTime())->modify('+1 day'), 'Ymd')) {
-                $result[] = $new_date_formatted . "00.zip";
+                $result[] = $new_date_formatted . "00";
                 $new_date->modify('+1 day');
                 $new_date_formatted = date_format($new_date, 'Ymd');
             }
@@ -94,7 +94,9 @@ function downloadFiles($countryCode, $countryData)
         {
             usleep(100000); // Un minimo di sleep
 
-            $url = $countryData["tek"]["files"] . $fileName;
+            $url = $countryData["tek"]["files"];
+
+            $url = str_replace("{@name}", $fileName, $url);
 
             $fileData = fetchUrl($url);
             if($fileData !== null)

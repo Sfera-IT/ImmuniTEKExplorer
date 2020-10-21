@@ -15,7 +15,7 @@
             "tek": {                
                 "mode": "swiss",
                 "list": "",            
-                "files": "https://dqarr2dc0prei.cloudfront.net/dp3t/v1/gaen/exposed/",
+                "files": "https://dqarr2dc0prei.cloudfront.net/dp3t/v1/gaen/exposed/{@name}",
                 "redownload": true
             }
         },
@@ -34,7 +34,7 @@
             "tek": {                
                 "mode": "json-stoppcorona",
                 "list": "https://cdn.prod-rca-coronaapp-fd.net/exposures/at/index.json",            
-                "files": "https://svc90.main.px.t-online.de/version/v1/diagnosis-keys/country/DE/date/",
+                "files": "",
                 "redownload": true
             }
         },
@@ -53,7 +53,7 @@
             "tek": {
                 "mode": "json-oldest-newest",
                 "list": "https://get.immuni.gov.it/v1/keys/index",            
-                "files": "https://get.immuni.gov.it/v1/keys/",
+                "files": "https://get.immuni.gov.it/v1/keys/{@name}",
                 "redownload": true
             }            
         },
@@ -72,7 +72,7 @@
             "tek": {
                 "mode": "swiss",
                 "list": "",            
-                "files": "https://www.pt.bfs.admin.ch/v1/gaen/exposed/",
+                "files": "https://www.pt.bfs.admin.ch/v1/gaen/exposed/{@name}",
                 "redownload": true
             }
         },
@@ -91,7 +91,7 @@
             "tek": {
                 "mode": "nhs",
                 "list": "",            
-                "files": "https://distribution-te-prod.prod.svc-test-trace.nhs.uk/distribution/daily/",
+                "files": "https://distribution-te-prod.prod.svc-test-trace.nhs.uk/distribution/daily/{@name}.zip",
                 "redownload": true
             }
         },
@@ -110,7 +110,7 @@
             "tek": {                
                 "mode": "json-filenames",
                 "list": "https://svc90.main.px.t-online.de/version/v1/diagnosis-keys/country/DE/date",            
-                "files": "https://svc90.main.px.t-online.de/version/v1/diagnosis-keys/country/DE/date/",
+                "files": "https://svc90.main.px.t-online.de/version/v1/diagnosis-keys/country/DE/date/{@name}",
                 "redownload": true
             }
         }        
