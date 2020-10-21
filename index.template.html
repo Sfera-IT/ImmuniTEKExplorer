@@ -47,6 +47,7 @@ Visualizzazioni di questa pagina: <?php echo explode(" ", exec('wc -l ./charthit
         <option value="tek">Tek</option>
         <option value="new_cases">New cases</option>
         <option value="perc_positive_v1">% installation (estimated v1)</option>
+        <option value="dbkeys">dbkeys</option>        
     </select>
     <div id='chartDesc'>        
     </div>
@@ -123,6 +124,10 @@ function rebuild()
     {
         $("#chartDesc").text("(nTek / 12) inteso come positivi che avevano l'app, in rapporto ai nuovi casi");
     }
+    else if(chartType == "dbkeys")
+    {
+        $("#chartDesc").text("test");
+    }
     
 
     buildDatasets();
@@ -149,6 +154,19 @@ function buildDatasets()
                 if(countryCode in data.days[day])
                     if("nTek" in data.days[day][countryCode])
                         dataset.data.push({'x':day,'y':data.days[day][countryCode]["nTek"]})
+            }
+
+            chart.data.datasets.push(dataset)
+        }
+        else if(chartType === "dbkeys")
+        {            
+            var dataset = initDatasetCountry(countryData);
+            
+            for(var day in data.days)
+            {
+                if(countryCode in data.days[day])
+                    if("nKeys" in data.days[day][countryCode])
+                        dataset.data.push({'x':day,'y':data.days[day][countryCode]["nKeys"]})
             }
 
             chart.data.datasets.push(dataset)

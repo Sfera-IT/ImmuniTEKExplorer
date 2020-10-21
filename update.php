@@ -4,122 +4,11 @@
 // @clodo: Questo script gira ogni ora (riga in /etc/crontab). Usate una copia per esperimenti.
 
 require __DIR__ . '/vendor/autoload.php';
+require __DIR__ . '/utils.php';
 
 ini_set('display_errors', 1);
 ini_set('log_errors', 1);
 error_reporting(E_ALL);
-
-// ----------------------------
-// Utils
-// ----------------------------
-
-function error($desc) 
-{ 
-    throw new Exception($desc);
-}
-
-function jsonEncode($data)
-{
-    return json_encode($data, JSON_PRETTY_PRINT);
-}
-
-function jsonDecode($data)
-{
-    return json_decode($data, true);
-}
-
-function mylog($v)
-{
-    $line = date('r') . " - " . $v . "\n";
-    echo $line;
-    file_put_contents(getDataPath() . "log.txt", $line, FILE_APPEND | LOCK_EX);
-}
-
-function getDataPath()
-{
-    return __DIR__ . "/data/";
-}
-
-// Generic fetch with log
-function fetchUrl($url, $post = null, $options = array())
-{
-    $result = fetchUrlEx($url, $post, $options);
-
-    $error = "";
-
-    if($result["error"] !== 0)
-        $error = $result["error"];
-    else if($result["info"]["http_code"] !== 200)
-        $error = "HTTP " . $result["info"]["http_code"];
-    
-    if($error !== "")
-    {
-        mylog("Fetch " . $url . " failed: " . $error);
-        return null;
-    }
-    else
-    {
-        $data = $result["body"];
-        mylog("Fetch " . $url . " ok, " . strlen($data) . " bytes");
-        return $data;
-    }
-}
-
-function fetchUrlEx($url, $post = null, $options = array())
-{
-    $timeout = 120;
-    if(isset($options["timeout"]))
-        $timeout = $options["timeout"];
-    
-    $curl = curl_init($url);
-
-    $curlOptions = array(
-        CURLOPT_RETURNTRANSFER => true,     // return web page
-        CURLOPT_HEADER         => true,    // don't return headers
-        CURLOPT_FOLLOWLOCATION => true,     // follow redirects
-        CURLOPT_ENCODING       => "",       // handle all encodings
-        CURLOPT_USERAGENT      => "spider", // who am i
-        CURLOPT_AUTOREFERER    => true,     // set referer on redirect
-        CURLOPT_CONNECTTIMEOUT => $timeout,      // timeout on connect
-        CURLOPT_TIMEOUT        => $timeout,      // timeout on response
-        CURLOPT_MAXREDIRS      => 10,       // stop after 10 redirects
-    );
-
-    curl_setopt_array($curl, $curlOptions );
-
-    if(isset($options["resolve"]))
-        curl_setopt($curl, CURLOPT_RESOLVE, $options["resolve"]);
-
-    if( (isset($options["verify"])) && ($options["verify"] === false) )
-    {
-        curl_setopt($curl, CURLOPT_SSL_VERIFYHOST, false); 
-        curl_setopt($curl, CURLOPT_SSL_VERIFYPEER, false);
-    }
-    
-    if($post != null)
-        curl_setopt($curl, CURLOPT_POSTFIELDS, http_build_query($post));
-
-    $response = curl_exec($curl);
-    
-    $header_size = curl_getinfo($curl, CURLINFO_HEADER_SIZE);
-    
-    $result = array();
-    $result["error"] = curl_errno($curl);
-    $result["error_message"] = curl_error($curl);
-    $result["info"] = curl_getinfo($curl);
-    $result["headers"] = array();
-    foreach(explode("\n", substr($response, 0, $header_size)) as $headerLine)
-    {
-        $posDoubleDot = strpos($headerLine,":");
-        if($posDoubleDot !== false)
-            $result["headers"][trim(strtolower(substr($headerLine,0,$posDoubleDot)))] = trim(substr($headerLine,$posDoubleDot+1));
-    }
-    $result["body"] = substr($response, $header_size);
-    
-    curl_close($curl);
-    
-    return $result;
-}
 
 function downloadFiles($countryCode, $countryData)
 {
@@ -137,7 +26,7 @@ function downloadFiles($countryCode, $countryData)
                 $dataList = jsonDecode($rawList);
 
                 $result = array();
-                for($i=$dataList["oldest"];$i<$dataList["newest"];$i++)
+                for($i=$dataList["oldest"];$i<=$dataList["newest"];$i++)
                 {
                     $result[] = $i;
                 }
@@ -256,12 +145,18 @@ function downloadFiles($countryCode, $countryData)
 }
 
 function main()
-{
+{    
     $timeStart = microtime(true);
+
+    // Read config
+    $config = jsonDecode(file_get_contents(__DIR__ . "/config.json"));
 
     // Reset log    
     file_put_contents(getDataPath() . "log.txt","");    
     mylog("Log path:" . getDataPath() . "log.txt");
+
+    // DB
+    $db = dbConnect($config["db"]["host"], $config["db"]["name"], $config["db"]["user"], $config["db"]["password"]);
 
     // Read static JSON data
     $static = jsonDecode(file_get_contents(__DIR__ . "/static.json"));
@@ -377,22 +272,56 @@ function main()
             $dateEnd = date('Y-m-d', $pbuf->getEndTimestamp());
             $d = date('Y-m-d', $pbuf->getEndTimestamp());
 
-            mylog("Tek: File:" . $filename . ", TimeStart:" . date('r', $pbuf->getStartTimestamp()) . ", TimeEnd:" . date('r', $pbuf->getEndTimestamp()) . ", Keys:" . count($pbuf->getKeys()));
+            $nKeysNew = 0;
+            $nKeysTotal = 0;
+
+            $keyMinDate = 0;
+            $keyMaxDate = 0;
 
             foreach ($pbuf->getKeys() as $singleKey) {                
-                $sha256 = hash('sha256',$singleKey->getKeyData());                
+                $nKeysTotal++;
+                $id = hash('sha256',$singleKey->getKeyData());                
 
                 $rollingStartIntervalNumber = $singleKey->getRollingStartIntervalNumber();
                 $rollingPeriod = $singleKey->getRollingPeriod();
 
-                //echo jsonEncode($sha256,true) . "\n";
-                //echo jsonEncode($rollingStartIntervalNumber,true) . "\n";
-                //echo jsonEncode($rollingPeriod,true) . "\n";
-
                 $keyTime = $rollingStartIntervalNumber*10*60;
+
+                if($keyMinDate === 0)
+                {
+                    $keyMinDate = $keyTime;
+                    $keyMaxDate = $keyTime;
+                }
+
+                if($keyTime<$keyMinDate) $keyMinDate = $keyTime;
+                if($keyTime>$keyMaxDate) $keyMaxDate = $keyTime;
                 
-                //mylog("Key: " . $sha256 . " - Period: " . $rollingPeriod . " - Time: " . date('r', $keyTime));
+                //mylog("Key: " . $id . " - Period: " . $rollingPeriod . " - Time: " . date('r', $keyTime));
+
+                if(isset($config["db"]))
+                {
+                    $rowCurrent = fetchSqlRowNull($db, "select k_id from tek_keys where k_id='" . escapeSql2($db, $id) . "'");
+                    if($rowCurrent === null)
+                    {
+                        $sql = "insert into tek_keys (k_id, k_source, k_date, k_rolling_start_interval_number, k_rolling_period) values (";
+                        $sql .= "'" . escapeSql2($db, $id) . "',";
+                        $sql .= "'" . escapeSql2($db, $countryCode) . "',";
+                        $sql .= "" . escapeSqlNum($keyTime) . ",";
+                        $sql .= "" . escapeSqlNum($rollingStartIntervalNumber) . ",";
+                        $sql .= "" . escapeSqlNum($rollingPeriod) . "";
+                        $sql .= ")";
+                        executeSql($db, $sql);
+
+                        $nKeysNew++;
+                    }
+                    else
+                    {
+                        // Already exists, nothing to do?                    
+                    }
+                }
             }
+
+            mylog("Tek: File:" . $filename . ", BatchStartTime:" . date('r', $pbuf->getStartTimestamp()) . ", BatchEndTime:" . date('r', $pbuf->getEndTimestamp()) . ", Keys min time:" . date('r', $keyMinDate) . ", Keys max time:" . date('r', $keyMaxDate) . ", Keys in file:" . $nKeysTotal . ", Keys new:" . $nKeysNew);
             
             if(isset($current["days"][$d][$countryCode]["nTek"]) === false)
                 $current["days"][$d][$countryCode]["nTek"] = 0;
@@ -400,10 +329,38 @@ function main()
         }
     }
 
+    // FullDB!
+    if(isset($config["db"]))
+    {
+        $timeFrom = time()-60*60*24*30;
+        $timeTo = time();
+
+        $sql = "select ";
+        $sql .= " DATE_FORMAT(from_unixtime(k_date), '%Y-%m-%d') as gdate,";
+        $sql .= " k_source as country,";
+        $sql .= " count(*) as n";
+        $sql .= " from tek_keys";
+        $sql .= " where";
+        $sql .= " k_date>=" . escapeSqlNum($timeFrom) . " and k_date<" . escapeSqlNum($timeTo);
+        $sql .= " group by Date_FORMAT(from_unixtime(k_date), '%Y-%m-%d'), k_source;";
+        $keys = fetchSql($db, $sql);
+        echo jsonEncode($keys, true);
+        foreach($keys as $key)
+        {
+            //$d = date('Y-m-d', $keys["gdate"];
+            /*
+            if(isset($current["days"][$key["gdate"]][$key["country"]]["n"]) === false)
+                $current["days"][$key["gdate"]][$key["country"]]["n"] = 0;*/
+            $current["days"][$key["gdate"]][$key["country"]]["nKeys"] = intval($key["n"]);
+        }
+    }
+
     // Ensure days sorted
     ksort($current["days"]);
 
     file_put_contents(getDataPath() . '/current.json', jsonEncode($current));
+
+    mysqli_close($db);
 
     $timeEnd = microtime(true);
     $timeElapsed = $timeEnd-$timeStart;
