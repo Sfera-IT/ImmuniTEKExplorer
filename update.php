@@ -413,13 +413,13 @@ function main()
         $timeTo = time();
 
         $sql = "select ";
-        $sql .= " DATE_FORMAT(from_unixtime(k_date), '%Y-%m-%d') as gdate,";
+        $sql .= " DATE_FORMAT(from_unixtime(k_rolling_date), '%Y-%m-%d') as gdate,";
         $sql .= " k_source as country,";
         $sql .= " count(*) as n";
         $sql .= " from tek_keys";
         $sql .= " where";
-        $sql .= " k_date>=" . escapeSqlNum($timeFrom) . " and k_date<" . escapeSqlNum($timeTo);
-        $sql .= " group by Date_FORMAT(from_unixtime(k_date), '%Y-%m-%d'), k_source;";
+        $sql .= " k_rolling_date>=" . escapeSqlNum($timeFrom) . " and k_rolling_date<" . escapeSqlNum($timeTo);
+        $sql .= " group by Date_FORMAT(from_unixtime(k_rolling_date), '%Y-%m-%d'), k_source;";
         $keys = fetchSql($db, $sql);        
         foreach($keys as $key)
         {

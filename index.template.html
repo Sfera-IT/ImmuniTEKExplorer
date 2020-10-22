@@ -49,6 +49,11 @@ Visualizzazioni di questa pagina: <?php echo explode(" ", exec('wc -l ./charthit
         <option value="perc_positive_v1">% installation (estimated v1)</option>
         <option value="dbkeys">dbkeys</option>        
     </select>
+    <select id="timeRange">
+        <option value="7days">Last 7 days</option>
+        <option value="31days">Last 31 days</option>
+        <option value="all">All</option>
+    </select>
     <div id='chartDesc'>        
     </div>
 </div>
@@ -136,6 +141,28 @@ function rebuild()
 function buildDatasets()
 {    
     var chartType = $('#chartType').val();
+    var timeRange = $('#timeRange').val();
+
+    var xDays = [];    
+    if(timeRange === "all")
+    {
+        for(var day in data.days)
+        xDays.push(day);
+    }
+    else if( (timeRange === "31days") || (timeRange === "7days") )
+    {
+        dNow = new Date();
+        dCur = new Date();
+        if(timeRange === "31days")
+            dCur.setDate(dNow.getDate()-31);
+        else if(timeRange === "7days")
+            dCur.setDate(dNow.getDate()-7);
+        while(dCur.getTime()<=dNow.getTime())
+        {
+            xDays.push(dCur.toISOString().split('T')[0])
+            dCur.setDate(dCur.getDate()+1);
+        }
+    }
 
     chart.data.datasets = [];
     for(var countryCode in data.static.countries)
@@ -149,11 +176,13 @@ function buildDatasets()
         {            
             var dataset = initDatasetCountry(countryData);
             
-            for(var day in data.days)
+            for(var iDay=0;iDay<xDays.length;iDay++)
             {
-                if(countryCode in data.days[day])
-                    if("nTek" in data.days[day][countryCode])
-                        dataset.data.push({'x':day,'y':data.days[day][countryCode]["nTek"]})
+                var day = xDays[iDay];
+                if(day in data.days)                
+                    if(countryCode in data.days[day])
+                        if("nTek" in data.days[day][countryCode])
+                            dataset.data.push({'x':day,'y':data.days[day][countryCode]["nTek"]})
             }
 
             chart.data.datasets.push(dataset)
@@ -162,11 +191,13 @@ function buildDatasets()
         {            
             var dataset = initDatasetCountry(countryData);
             
-            for(var day in data.days)
+            for(var iDay=0;iDay<xDays.length;iDay++)
             {
-                if(countryCode in data.days[day])
-                    if("nKeys" in data.days[day][countryCode])
-                        dataset.data.push({'x':day,'y':data.days[day][countryCode]["nKeys"]})
+                var day = xDays[iDay];
+                if(day in data.days)
+                    if(countryCode in data.days[day])
+                        if("nKeys" in data.days[day][countryCode])
+                            dataset.data.push({'x':day,'y':data.days[day][countryCode]["nKeys"]})
             }
 
             chart.data.datasets.push(dataset)
@@ -175,11 +206,13 @@ function buildDatasets()
         {
             var dataset = initDatasetCountry(countryData);
             
-            for(var day in data.days)
+            for(var iDay=0;iDay<xDays.length;iDay++)
             {
-                if(countryCode in data.days[day])
-                    if("new_cases" in data.days[day][countryCode])
-                        dataset.data.push({'x':day,'y':data.days[day][countryCode]["new_cases"]})
+                var day = xDays[iDay];
+                if(day in data.days)
+                    if(countryCode in data.days[day])
+                        if("new_cases" in data.days[day][countryCode])
+                            dataset.data.push({'x':day,'y':data.days[day][countryCode]["new_cases"]})
             }
 
             chart.data.datasets.push(dataset)
@@ -188,25 +221,29 @@ function buildDatasets()
         {
             var dataset = initDatasetCountry(countryData);
             
-            for(var day in data.days)
+            for(var iDay=0;iDay<xDays.length;iDay++)
             {
+                var day = xDays[iDay];
                 $v = 0;
-                if(countryCode in data.days[day])
+                if(day in data.days)
                 {
-                    if("nTek" in data.days[day][countryCode]) // Without nTek, don't compute point
+                    if(countryCode in data.days[day])
                     {
-                        if("new_cases" in data.days[day][countryCode]) // Without new_cases, don't compute point
+                        if("nTek" in data.days[day][countryCode]) // Without nTek, don't compute point
                         {
-                            var v=0;
-
-                            if(data.days[day][countryCode]["new_cases"] != 0) // If new_cases==0, compute anyway point
+                            if("new_cases" in data.days[day][countryCode]) // Without new_cases, don't compute point
                             {
-                                v = (100*(data.days[day][countryCode]["nTek"]/12)/data.days[day][countryCode]["new_cases"]);                            
-                            }
+                                var v=0;
 
-                            dataset.data.push({'x':day,'y':v})
+                                if(data.days[day][countryCode]["new_cases"] != 0) // If new_cases==0, compute anyway point
+                                {
+                                    v = (100*(data.days[day][countryCode]["nTek"]/12)/data.days[day][countryCode]["new_cases"]);                            
+                                }
+
+                                dataset.data.push({'x':day,'y':v})
+                            }                    
                         }                    
-                    }                    
+                    }
                 }
             }
 
@@ -237,6 +274,10 @@ function main()
     });
 
     $('#chartType').change(function() {
+        rebuild();
+    })
+
+    $('#timeRange').change(function() {
         rebuild();
     })
 
