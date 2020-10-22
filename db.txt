@@ -1,0 +1,88 @@
+--------------------
+DDL
+--------------------
+
+
+CREATE DATABASE "tekexplorer";
+
+CREATE USER 'tekexplorer'@localhost IDENTIFIED BY 'xxx';
+
+GRANT ALL PRIVILEGES ON *.* TO 'tekexplorer'@localhost IDENTIFIED BY 'xxx';
+
+CREATE TABLE `tek_batches` (
+  `k_name` varchar(255) NOT NULL,
+  `k_source` varchar(10) NOT NULL,
+  `k_first_start_ts` bigint(11) DEFAULT '0',
+  `k_first_end_ts` bigint(11) DEFAULT '0',
+  `k_last_start_ts` bigint(11) DEFAULT '0',
+  `k_last_end_ts` bigint(11) DEFAULT '0',
+  `k_keys_min_rolling_date` bigint(11) DEFAULT '0',
+  `k_keys_max_rolling_date` bigint(11) DEFAULT '0',
+  `k_keys_count` bigint(11) DEFAULT '0',
+  PRIMARY KEY (`k_name`,`k_source`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+CREATE TABLE `tek_keys` (
+  `k_id` varchar(64) NOT NULL,
+  `k_source` varchar(20) DEFAULT NULL,
+  `k_rolling_start_interval_number` bigint(11) DEFAULT '0',
+  `k_rolling_period` bigint(11) DEFAULT '0',
+  `k_rolling_date` bigint(20) DEFAULT '0',
+  `k_batch_first_name` varchar(255) DEFAULT NULL,
+  `k_batch_first_start_ts` bigint(11) DEFAULT '0',
+  `k_batch_first_end_ts` bigint(11) DEFAULT '0',
+  `k_batch_last_name` varchar(255) DEFAULT NULL,
+  `k_batch_last_start_ts` bigint(11) DEFAULT '0',
+  `k_batch_last_end_ts` bigint(11) DEFAULT '0',
+  `k_hit` bigint(20) DEFAULT '0',
+  PRIMARY KEY (`k_id`),
+  KEY `i_k_source` (`k_source`),
+  KEY `i_k_rolliing_date` (`k_rolling_date`),
+  KEY `i_k_batch_first_name` (`k_batch_first_name`),
+  KEY `i_k_batch_first_start_ts` (`k_batch_first_start_ts`),
+  KEY `i_k_batch_first_end_ts` (`k_batch_first_end_ts`),
+  KEY `i_k_batch_last_name` (`k_batch_last_name`),
+  KEY `i_k_batch_last_start_ts` (`k_batch_last_start_ts`),
+  KEY `i_k_batch_last_end_ts` (`k_batch_last_end_ts`),
+  KEY `i_k_hit` (`k_hit`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+--------------------
+Notes
+--------------------
+
+---
+Tabella tek_batches
+
+k_source - Country code
+k_name - Batch filename
+k_first_start_ts - $pbuf->getStartTimestamp() prima volta incontrato
+k_first_end_ts - $pbuf->getEndTimestamp() prima volta incontrato
+k_last_start_ts - $pbuf->getStartTimestamp() ultima volta incontrato
+k_last_end_ts - $pbuf->getEndTimestamp() ultima volta incontrato
+k_keys_min_rolling_date - L'ultima volta che è stato processato, la minore k_rolling_date delle sue chiavi
+k_keys_max_rolling_date - L'ultima volta che è stato processato, la maggiore k_rolling_date delle sue chiavi
+k_keys_count - L'ultima volta che è stato processato, n. chiavi
+
+Tabella tek_keys
+---
+k_id - Chiave primaria, hex(key_data)
+k_source - Origine (country-code)
+k_rolling_start_interval_number - $singleKey->getRollingStartIntervalNumber()
+k_rolling_period - $singleKey->getRollingPeriod()
+
+k_rolling_date - k_rolling_start_interval_number*60*10 (ex k_date)
+
+k_batch_first_name - Nome batch in cui è stato riportato per la prima volta
+k_batch_first_start_ts - StartTimeStamp del batch in cui è stato riportato per la prima volta
+k_batch_first_end_ts - EndTimeStamp come sopra
+k_batch_last_name - Nome batch in cui è stato riportato per l'ultima volta
+k_batch_last_start_ts - StartTimeStamp del batch in cui è stato riportato per l'ultima volta
+k_batch_last_end_ts - EndTimeStamp come sopra
+
+k_hit - Durante l'ultima analisi, quante volte è stato visto. 
+        In CH ad esempio le vecchie chiavi dovrebbero crollare a 0.
+
+--------------------
+Useful sql
+--------------------
