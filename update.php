@@ -276,8 +276,10 @@ function main()
             $stream = new \Google\Protobuf\Internal\CodedInputStream($data);
             $res = $pbuf->parseFromStream($stream);
 
-            $batchStartTimestamp = date('Y-m-d', $pbuf->getStartTimestamp()); 
-            $batchEndTimestamp = date('Y-m-d', $pbuf->getEndTimestamp());
+            $batchStartUnix = $pbuf->getStartTimestamp();
+            $batchEndUnix = $pbuf->getEndTimestamp();
+            $batchStartTimestamp = date('Y-m-d', $batchStartUnix); 
+            $batchEndTimestamp = date('Y-m-d', $batchEndUnix);
             $d = date('Y-m-d', $pbuf->getEndTimestamp());
 
             // DB Batch 
@@ -290,21 +292,21 @@ function main()
                     $sql = "insert into tek_batches (k_name, k_source, k_first_start_ts, k_first_end_ts, k_last_start_ts, k_last_end_ts) values (";
                     $sql .= "'" . escapeSql2($db, $dirName) . "',";
                     $sql .= "'" . escapeSql2($db, $countryCode) . "',";
-                    $sql .= "" . escapeSqlNum($batchStartTimestamp) . ",";
-                    $sql .= "" . escapeSqlNum($batchEndTimestamp) . ",";
-                    $sql .= "" . escapeSqlNum($batchStartTimestamp) . ",";
-                    $sql .= "" . escapeSqlNum($batchEndTimestamp) . "";
+                    $sql .= "" . escapeSqlNum($batchStartUnix) . ",";
+                    $sql .= "" . escapeSqlNum($batchEndUnix) . ",";
+                    $sql .= "" . escapeSqlNum($batchStartUnix) . ",";
+                    $sql .= "" . escapeSqlNum($batchEndUnix) . "";
                     $sql .= ")";
                     executeSql($db, $sql);
                     //mylog("SQL Batch Insert:" . $sql);
                 }
                 else
                 {
-                    if( (intval($rowBatch["k_last_start_ts"])!=$batchStartTimestamp) || (intval($rowBatch["k_last_end_ts"])!=$batchEndTimestamp) )
+                    if( (intval($rowBatch["k_last_start_ts"])!=$batchStartUnix) || (intval($rowBatch["k_last_end_ts"])!=$batchEndUnix) )
                     {
                         $sql = "update tek_batches set ";
-                        $sql .= " k_last_start_ts=" . escapeSqlNum($batchStartTimestamp) . ",";
-                        $sql .= " k_last_end_ts=" . escapeSqlNum($batchEndTimestamp) . ",";
+                        $sql .= " k_last_start_ts=" . escapeSqlNum($batchStartUnix) . ",";
+                        $sql .= " k_last_end_ts=" . escapeSqlNum($batchEndUnix) . ",";
                         $sql .= $sqlWhere;
                         executeSql($db,$sql);
                         //mylog("SQL Batch Update:" . $$sql);
@@ -356,11 +358,11 @@ function main()
                         $sql .= "" . escapeSqlNum($rollingPeriod) . ",";
                         $sql .= "" . escapeSqlNum($rollingDate) . ",";
                         $sql .= "'" . escapeSql2($db, $dirName) . "',";
-                        $sql .= "" . escapeSqlNum($batchStartTimestamp) . ",";
-                        $sql .= "" . escapeSqlNum($batchEndTimestamp) . ",";
+                        $sql .= "" . escapeSqlNum($batchStartUnix) . ",";
+                        $sql .= "" . escapeSqlNum($batchEndUnix) . ",";
                         $sql .= "'" . escapeSql2($db, $dirName) . "',";
-                        $sql .= "" . escapeSqlNum($batchStartTimestamp) . ",";
-                        $sql .= "" . escapeSqlNum($batchEndTimestamp) . ",";
+                        $sql .= "" . escapeSqlNum($batchStartUnix) . ",";
+                        $sql .= "" . escapeSqlNum($batchEndUnix) . ",";
                         $sql .= "1";
                         $sql .= ")";
                         executeSql($db, $sql);
@@ -370,13 +372,13 @@ function main()
                     else
                     {                        
                         if( ($rowCurrent["k_batch_last_name"] != $dirName) ||
-                            (intval($rowCurrent["k_batch_last_start_ts"]) != $batchStartTimestamp) ||
-                            (intval($rowCurrent["k_batch_last_end_ts"]) != $batchEndTimestamp) )
+                            (intval($rowCurrent["k_batch_last_start_ts"]) != $batchStartUnix) ||
+                            (intval($rowCurrent["k_batch_last_end_ts"]) != $batchEndUnix) )
                             {
                                 $sql = "update tek_keys set ";
                                 $sql .= " k_batch_last_name='" . escapeSql2($db, $dirName) . "',";
-                                $sql .= " k_batch_last_start_ts=" . escapeSqlNum($batchStartTimestamp) . ",";
-                                $sql .= " k_batch_last_end_ts=" . escapeSqlNum($batchEndTimestamp) . "";
+                                $sql .= " k_batch_last_start_ts=" . escapeSqlNum($batchStartUnix) . ",";
+                                $sql .= " k_batch_last_end_ts=" . escapeSqlNum($batchEndUnix) . "";
                                 $sql .= " where " . $sqlWhere;
                                 executeSql($db, $sql);
                             }
