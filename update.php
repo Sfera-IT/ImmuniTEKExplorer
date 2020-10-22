@@ -1,7 +1,7 @@
 <?php
 
 // @clodo: Questo script fetcha tutte le fonti e popola ./data/current.json, in modo da separare raccolta/computazione dati dal php che genera visualizzazione
-// @clodo: Questo script gira ogni ora (riga in /etc/crontab). Usate una copia per esperimenti.
+// @clodo: Questo script gira ogni ora (riga in /etc/crontab). Usate una copia per esperimenti. 
 
 require __DIR__ . '/vendor/autoload.php';
 require __DIR__ . '/utils.php';
