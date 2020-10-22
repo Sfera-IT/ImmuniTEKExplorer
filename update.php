@@ -250,6 +250,10 @@ function main()
         }
         sort($dirNames);
 
+        // Reset Hit Counter
+        $sql = "update tek_keys set k_hit=0 where k_hit!=0 and k_source='" . escapeSql2($db, $countryCode) . "'";
+        executeSql($db, $sql);
+
         // Process TEK
         mylog("TEK analysis");
         foreach ($dirNames as $dirName) 
@@ -272,60 +276,129 @@ function main()
             $stream = new \Google\Protobuf\Internal\CodedInputStream($data);
             $res = $pbuf->parseFromStream($stream);
 
-            $dateStart = date('Y-m-d', $pbuf->getStartTimestamp()); 
-            $dateEnd = date('Y-m-d', $pbuf->getEndTimestamp());
+            $batchStartTimestamp = date('Y-m-d', $pbuf->getStartTimestamp()); 
+            $batchEndTimestamp = date('Y-m-d', $pbuf->getEndTimestamp());
             $d = date('Y-m-d', $pbuf->getEndTimestamp());
+
+            // DB Batch 
+            if($db !== null)
+            {
+                $sqlWhere = " where k_name='" . escapeSql2($db, $dirName) . "' and k_source='" . escapeSql2($db, $countryCode) . "'";
+                $rowBatch = fetchSqlRowNull($db, "select * from tek_batches " . $sqlWhere);
+                if($rowBatch === null)
+                {
+                    $sql = "insert into tek_batches (k_name, k_source, k_first_start_ts, k_first_end_ts, k_last_start_ts, k_last_end_ts) values (";
+                    $sql .= "'" . escapeSql2($db, $dirName) . "',";
+                    $sql .= "'" . escapeSql2($db, $countryCode) . "',";
+                    $sql .= "" . escapeSqlNum($batchStartTimestamp) . ",";
+                    $sql .= "" . escapeSqlNum($batchEndTimestamp) . ",";
+                    $sql .= "" . escapeSqlNum($batchStartTimestamp) . ",";
+                    $sql .= "" . escapeSqlNum($batchEndTimestamp) . "";
+                    $sql .= ")";
+                    executeSql($db, $sql);
+                    //mylog("SQL Batch Insert:" . $sql);
+                }
+                else
+                {
+                    if( (intval($rowBatch["k_last_start_ts"])!=$batchStartTimestamp) || (intval($rowBatch["k_last_end_ts"])!=$batchEndTimestamp) )
+                    {
+                        $sql = "update tek_batches set ";
+                        $sql .= " k_last_start_ts=" . escapeSqlNum($batchStartTimestamp) . ",";
+                        $sql .= " k_last_end_ts=" . escapeSqlNum($batchEndTimestamp) . ",";
+                        $sql .= $sqlWhere;
+                        executeSql($db,$sql);
+                        //mylog("SQL Batch Update:" . $$sql);
+                    }
+                }
+            }
 
             $nKeysNew = 0;
             $nKeysTotal = 0;
 
-            $keyMinDate = 0;
-            $keyMaxDate = 0;
+            $rollingDateMin = 0;
+            $rollingDateMax = 0;
 
-            foreach ($pbuf->getKeys() as $singleKey) {                
+            foreach ($pbuf->getKeys() as $singleKey) 
+            {
                 $nKeysTotal++;
-                $id = hash('sha256',$singleKey->getKeyData());                
+                //$id = hash('sha256',$singleKey->getKeyData());
+                $id = bin2hex($singleKey->getKeyData());
 
                 $rollingStartIntervalNumber = $singleKey->getRollingStartIntervalNumber();
                 $rollingPeriod = $singleKey->getRollingPeriod();
 
-                $keyTime = $rollingStartIntervalNumber*10*60;
+                $rollingDate = $rollingStartIntervalNumber*10*60;
 
-                if($keyMinDate === 0)
+                if($rollingDateMin === 0)
                 {
-                    $keyMinDate = $keyTime;
-                    $keyMaxDate = $keyTime;
+                    $rollingDateMin = $rollingDate;
+                    $rollingDateMax = $rollingDate;
                 }
 
-                if($keyTime<$keyMinDate) $keyMinDate = $keyTime;
-                if($keyTime>$keyMaxDate) $keyMaxDate = $keyTime;
+                if($rollingDate<$rollingDateMin) $rollingDateMin = $rollingDate;
+                if($rollingDate>$rollingDateMax) $rollingDateMax = $rollingDate;
                 
-                //mylog("Key: " . $id . " - Period: " . $rollingPeriod . " - Time: " . date('r', $keyTime));
+                //mylog("Key: " . $id . " - Period: " . $rollingPeriod . " - Time: " . date('r', $rollingDate));
 
+                // DB Keys
                 if($db !== null)
                 {
-                    $rowCurrent = fetchSqlRowNull($db, "select k_id from tek_keys where k_id='" . escapeSql2($db, $id) . "'");
+                    $sqlWhere = " k_id='" . escapeSql2($db, $id) . "'";
+                    $rowCurrent = fetchSqlRowNull($db, "select * from tek_keys where " . $sqlWhere);
                     if($rowCurrent === null)
                     {
-                        $sql = "insert into tek_keys (k_id, k_source, k_date, k_rolling_start_interval_number, k_rolling_period) values (";
+                        $sql = "insert into tek_keys (k_id, k_source, k_rolling_start_interval_number, k_rolling_period, k_rolling_date,";
+                        $sql .= " k_batch_first_name, k_batch_first_start_ts, k_batch_first_end_ts, k_batch_last_name, k_batch_last_start_ts, k_batch_last_end_ts, k_hit";
+                        $sql .= ") values (";
                         $sql .= "'" . escapeSql2($db, $id) . "',";
                         $sql .= "'" . escapeSql2($db, $countryCode) . "',";
-                        $sql .= "" . escapeSqlNum($keyTime) . ",";
                         $sql .= "" . escapeSqlNum($rollingStartIntervalNumber) . ",";
-                        $sql .= "" . escapeSqlNum($rollingPeriod) . "";
+                        $sql .= "" . escapeSqlNum($rollingPeriod) . ",";
+                        $sql .= "" . escapeSqlNum($rollingDate) . ",";
+                        $sql .= "'" . escapeSql2($db, $dirName) . "',";
+                        $sql .= "" . escapeSqlNum($batchStartTimestamp) . ",";
+                        $sql .= "" . escapeSqlNum($batchEndTimestamp) . ",";
+                        $sql .= "'" . escapeSql2($db, $dirName) . "',";
+                        $sql .= "" . escapeSqlNum($batchStartTimestamp) . ",";
+                        $sql .= "" . escapeSqlNum($batchEndTimestamp) . ",";
+                        $sql .= "1";
                         $sql .= ")";
                         executeSql($db, $sql);
 
                         $nKeysNew++;
                     }
                     else
-                    {
-                        // Already exists, nothing to do?                    
+                    {                        
+                        if( ($rowCurrent["k_batch_last_name"] != $dirName) ||
+                            (intval($rowCurrent["k_batch_last_start_ts"]) != $batchStartTimestamp) ||
+                            (intval($rowCurrent["k_batch_last_end_ts"]) != $batchEndTimestamp) )
+                            {
+                                $sql = "update tek_keys set ";
+                                $sql .= " k_batch_last_name='" . escapeSql2($db, $dirName) . "',";
+                                $sql .= " k_batch_last_start_ts=" . escapeSqlNum($batchStartTimestamp) . ",";
+                                $sql .= " k_batch_last_end_ts=" . escapeSqlNum($batchEndTimestamp) . "";
+                                $sql .= " where " . $sqlWhere;
+                                executeSql($db, $sql);
+                            }
+
+                        // Already exists, nothing to do?
+                        $sql = "update tek_keys set k_hit=k_hit+1 where " . $sqlWhere;
+                        executeSql($db, $sql);
                     }
                 }
             }
 
-            mylog("Tek: File:" . $filename . ", BatchStartTime:" . date('r', $pbuf->getStartTimestamp()) . ", BatchEndTime:" . date('r', $pbuf->getEndTimestamp()) . ", Keys min time:" . date('r', $keyMinDate) . ", Keys max time:" . date('r', $keyMaxDate) . ", Keys in file:" . $nKeysTotal . ", Keys new:" . $nKeysNew);
+            // Update batch
+            {
+                $sql = "update tek_batches set ";
+                $sql .= " k_keys_min_rolling_date=" . escapeSqlNum($rollingDateMin) . ",";
+                $sql .= " k_keys_max_rolling_date=" . escapeSqlNum($rollingDateMax) . ",";
+                $sql .= " k_keys_count=" . escapeSqlNum($nKeysTotal) . "";
+                $sql .= " where k_name='" . escapeSql2($db, $dirName) . "' and k_source='" . escapeSql2($db, $countryCode) . "'";
+                executeSql($db, $sql);
+            }
+
+            mylog("Tek: File:" . $filename . ", BatchStartTime:" . date('r', $pbuf->getStartTimestamp()) . ", BatchEndTime:" . date('r', $pbuf->getEndTimestamp()) . ", Keys min time:" . date('r', $rollingDateMin) . ", Keys max time:" . date('r', $rollingDateMax) . ", Keys in file:" . $nKeysTotal . ", Keys new:" . $nKeysNew);
             
             if(isset($current["days"][$d][$countryCode]["nTek"]) === false)
                 $current["days"][$d][$countryCode]["nTek"] = 0;
@@ -363,7 +436,7 @@ function main()
 
     file_put_contents(getDataPath() . '/current.json', jsonEncode($current));
 
-    mylog("Total keys in DB: " . jsonEncode(fetchSql($db, "select k_source,count(*) from tek_keys")));
+    mylog("Total keys in DB: " . jsonEncode(fetchSql($db, "select k_source,count(*) from tek_keys group by k_source")));
 
     if($db !== null)
         mysqli_close($db);
