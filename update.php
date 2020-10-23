@@ -250,9 +250,13 @@ function main()
         }
         sort($dirNames);
 
-        // Reset Hit Counter
-        $sql = "update tek_keys set k_hit=0 where k_hit!=0 and k_source='" . escapeSql2($db, $countryCode) . "'";
-        executeSql($db, $sql);
+                
+        if($config["compute_keys_hit"])
+        {
+            // Reset Hit Counter        
+            $sql = "update tek_keys set k_hit=0 where k_hit!=0 and k_source='" . escapeSql2($db, $countryCode) . "'";
+            executeSql($db, $sql);
+        }
 
         // Process TEK
         mylog("TEK analysis");
@@ -374,18 +378,21 @@ function main()
                         if( ($rowCurrent["k_batch_last_name"] != $dirName) ||
                             (intval($rowCurrent["k_batch_last_start_ts"]) != $batchStartUnix) ||
                             (intval($rowCurrent["k_batch_last_end_ts"]) != $batchEndUnix) )
-                            {
-                                $sql = "update tek_keys set ";
-                                $sql .= " k_batch_last_name='" . escapeSql2($db, $dirName) . "',";
-                                $sql .= " k_batch_last_start_ts=" . escapeSqlNum($batchStartUnix) . ",";
-                                $sql .= " k_batch_last_end_ts=" . escapeSqlNum($batchEndUnix) . "";
-                                $sql .= " where " . $sqlWhere;
-                                executeSql($db, $sql);
-                            }
+                        {
+                            $sql = "update tek_keys set ";
+                            $sql .= " k_batch_last_name='" . escapeSql2($db, $dirName) . "',";
+                            $sql .= " k_batch_last_start_ts=" . escapeSqlNum($batchStartUnix) . ",";
+                            $sql .= " k_batch_last_end_ts=" . escapeSqlNum($batchEndUnix) . "";
+                            $sql .= " where " . $sqlWhere;
+                            executeSql($db, $sql);
+                        }
 
-                        // Already exists, nothing to do?
-                        $sql = "update tek_keys set k_hit=k_hit+1 where " . $sqlWhere;
-                        executeSql($db, $sql);
+                        if($config["compute_keys_hit"])
+                        {
+                            // Already exists, nothing to do?
+                            $sql = "update tek_keys set k_hit=k_hit+1 where " . $sqlWhere;
+                            executeSql($db, $sql);
+                        }
                     }
                 }
             }
