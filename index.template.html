@@ -48,10 +48,13 @@ Visualizzazioni di questa pagina: <?php echo explode(" ", exec('wc -l ./charthit
         <option value="new_cases">New cases</option>
         <option value="perc_positive_v1">% installation (estimated v1)</option>
         <option value="dbkeys">dbkeys</option>        
+        <option value="app_download">app_download</option>        
+        <option value="app_notifications_sent">app_notifications_sent</option>        
+        <option value="app_positive_users">app_positive_users</option>        
     </select>
     <select id="timeRange">
-        <option value="7days">Last 7 days</option>
         <option value="31days">Last 31 days</option>
+        <option value="7days">Last 7 days</option>        
         <option value="all">All</option>
     </select>
     <div id='chartDesc'>        
@@ -133,7 +136,18 @@ function rebuild()
     {
         $("#chartDesc").text("test");
     }
-    
+    else if(chartType == "app_download")
+    {
+        $("#chartDesc").text("Official Data - Download");
+    }
+    else if(chartType == "app_notifications_sent")
+    {
+        $("#chartDesc").text("Official Data - Notifications sent");
+    }
+    else if(chartType == "app_positive_users")
+    {
+        $("#chartDesc").text("Official Data - Positive Users");
+    }    
 
     buildDatasets();
 }
@@ -245,6 +259,51 @@ function buildDatasets()
                         }                    
                     }
                 }
+            }
+
+            chart.data.datasets.push(dataset)
+        }
+        else if(chartType === "app_download")
+        {
+            var dataset = initDatasetCountry(countryData);
+            
+            for(var iDay=0;iDay<xDays.length;iDay++)
+            {
+                var day = xDays[iDay];
+                if(day in data.days)
+                    if(countryCode in data.days[day])
+                        if("app_download" in data.days[day][countryCode])
+                            dataset.data.push({'x':day,'y':data.days[day][countryCode]["app_download"]})
+            }
+
+            chart.data.datasets.push(dataset)
+        }
+        else if(chartType === "app_notifications_sent")
+        {
+            var dataset = initDatasetCountry(countryData);
+            
+            for(var iDay=0;iDay<xDays.length;iDay++)
+            {
+                var day = xDays[iDay];
+                if(day in data.days)
+                    if(countryCode in data.days[day])
+                        if("app_notifications_sent" in data.days[day][countryCode])
+                            dataset.data.push({'x':day,'y':data.days[day][countryCode]["app_notifications_sent"]})
+            }
+
+            chart.data.datasets.push(dataset)
+        }
+        else if(chartType === "app_positive_users")
+        {
+            var dataset = initDatasetCountry(countryData);
+            
+            for(var iDay=0;iDay<xDays.length;iDay++)
+            {
+                var day = xDays[iDay];
+                if(day in data.days)
+                    if(countryCode in data.days[day])
+                        if("app_positive_users" in data.days[day][countryCode])
+                            dataset.data.push({'x':day,'y':data.days[day][countryCode]["app_positive_users"]})
             }
 
             chart.data.datasets.push(dataset)

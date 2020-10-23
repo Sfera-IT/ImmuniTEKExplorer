@@ -1,0 +1,42 @@
+{
+    "2020-10-05": {
+        "app_download": 7264257,
+        "app_notifications_sent": 6270,
+        "app_positive_users": 369
+    },
+    "2020-10-06": {
+        "app_download": 7481141,
+        "app_notifications_sent": 6718,
+        "app_positive_users": 378
+    },
+    "2020-10-07": {
+        "app_download": 7713251,
+        "app_notifications_sent": 7361,
+        "app_positive_users": 419
+    },
+    "2020-10-09": {
+        "app_download": 8145511,
+        "app_notifications_sent": 8300,
+        "app_positive_users": 477
+    },
+    "2020-10-12": {
+        "app_download": 8605896,
+        "app_notifications_sent": 10060,
+        "app_positive_users": 567
+    },
+    "2020-10-14": {
+        "app_download": 8762078,
+        "app_notifications_sent": 10060,
+        "app_positive_users": 567
+    },
+    "2020-10-15": {
+        "app_download": 8838387,
+        "app_notifications_sent": 10060,
+        "app_positive_users": 567
+    },
+    "2020-10-21": {
+        "app_download": 9229190,
+        "app_notifications_sent": 22796,
+        "app_positive_users": 1134
+    }
+}

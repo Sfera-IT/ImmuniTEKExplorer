@@ -220,7 +220,21 @@ function main()
             $d = $item["date"];
             $dn = date('Y-m-d', strtotime($d));
             $current["days"][$dn][$countryCode]["new_cases"] = $item["new_cases"];
-        }            
+        }
+
+        // ----------------------------
+        // Copy manual data
+        // ----------------------------
+
+        $dataManualCountryPath = __DIR__ . "/data_manual/" . $countryCode . ".json";
+        if(file_exists($dataManualCountryPath))
+        {
+            $dataCountryManual = jsonDecode(file_get_contents($dataManualCountryPath));            
+            foreach($dataCountryManual as $day => $dayData)
+            {
+                $current["days"][$day][$countryCode] = array_merge($current["days"][$day][$countryCode], $dayData);
+            }
+        }
 
         // ----------------------------
         // Fetch TEK

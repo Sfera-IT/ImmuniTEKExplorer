@@ -61,7 +61,7 @@
             "name": "Switzerland",
             "app": "SwissCovid",
             "alpha3": "CHE",
-            "active": true,
+            "active": false,
             "population": 123,
             "backgroundColor": [
                 "rgba(128,255,128,0.2)"
@@ -80,7 +80,7 @@
             "name": "United Kingdom",
             "app": "NHS",
             "alpha3": "GBR",
-            "active": true,
+            "active": false,
             "population": 123,
             "backgroundColor": [
                 "rgba(128,128,255,0.2)"
@@ -99,7 +99,7 @@
             "name": "Germany",
             "app": "CoronaWarnApp",
             "alpha3": "DEU",
-            "active": true,
+            "active": false,
             "population": 123,
             "backgroundColor": [
                 "rgba(255,128,255,0.2)"
