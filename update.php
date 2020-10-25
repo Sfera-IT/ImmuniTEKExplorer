@@ -210,7 +210,7 @@ function main()
         // OWID data
         // ----------------------------
 
-        file_put_contents(getDataPath() . "owid_" . $countryCode . ".json", jsonEncode($dataOwidCovid[$countryData["alpha3"]]));
+        file_put_contents(getDataPath() . "/" . $countryCode . "/owid.json", jsonEncode($dataOwidCovid[$countryData["alpha3"]], true));
 
         $countryAlpha3 = $countryData["alpha3"];
         if(isset($dataOwidCovid[$countryAlpha3]) === false)
@@ -220,12 +220,16 @@ function main()
             $d = $item["date"];
             $dn = date('Y-m-d', strtotime($d));
             $current["days"][$dn][$countryCode]["new_cases"] = $item["new_cases"];
+            $current["days"][$dn][$countryCode]["total_cases"] = $item["total_cases"];            
+            $current["days"][$dn][$countryCode]["new_deaths"] = $item["new_deaths"];            
+            $current["days"][$dn][$countryCode]["total_deaths"] = $item["total_deaths"];
         }
 
         // ----------------------------
         // Copy manual data
         // ----------------------------
 
+        /* // Not yet used
         $dataManualCountryPath = __DIR__ . "/data_manual/" . $countryCode . ".json";
         if(file_exists($dataManualCountryPath))
         {
@@ -233,6 +237,21 @@ function main()
             foreach($dataCountryManual as $day => $dayData)
             {
                 $current["days"][$day][$countryCode] = array_merge($current["days"][$day][$countryCode], $dayData);
+            }
+        }
+        */
+
+        // ----------------------------
+        // Invoke plugin for custom code
+        // ----------------------------
+        {
+            $pluginPath = __DIR__ . "/update_" . $countryCode . ".php";			
+            if(file_exists($pluginPath))
+            {
+                require_once($pluginPath);
+                $className = "TekExplorer_" . $countryCode;
+                $plugin = new $className();            
+                $plugin->do($current, $countryCode, $countryData);
             }
         }
 
@@ -344,6 +363,7 @@ function main()
                 //$id = hash('sha256',$singleKey->getKeyData());
                 $id = bin2hex($singleKey->getKeyData());
 
+                $transmissionRiskLevel = $singleKey->getTransmissionRiskLevel();                
                 $rollingStartIntervalNumber = $singleKey->getRollingStartIntervalNumber();
                 $rollingPeriod = $singleKey->getRollingPeriod();
 
@@ -367,7 +387,7 @@ function main()
                     $rowCurrent = fetchSqlRowNull($db, "select * from tek_keys where " . $sqlWhere);
                     if($rowCurrent === null)
                     {
-                        $sql = "insert into tek_keys (k_id, k_source, k_rolling_start_interval_number, k_rolling_period, k_rolling_date,";
+                        $sql = "insert into tek_keys (k_id, k_source, k_rolling_start_interval_number, k_rolling_period, k_rolling_date, k_transmission_risk_level, ";
                         $sql .= " k_batch_first_name, k_batch_first_start_ts, k_batch_first_end_ts, k_batch_last_name, k_batch_last_start_ts, k_batch_last_end_ts, k_hit";
                         $sql .= ") values (";
                         $sql .= "'" . escapeSql2($db, $id) . "',";
@@ -375,6 +395,7 @@ function main()
                         $sql .= "" . escapeSqlNum($rollingStartIntervalNumber) . ",";
                         $sql .= "" . escapeSqlNum($rollingPeriod) . ",";
                         $sql .= "" . escapeSqlNum($rollingDate) . ",";
+                        $sql .= "" . escapeSqlNum($transmissionRiskLevel) . ",";
                         $sql .= "'" . escapeSql2($db, $dirName) . "',";
                         $sql .= "" . escapeSqlNum($batchStartUnix) . ",";
                         $sql .= "" . escapeSqlNum($batchEndUnix) . ",";
@@ -391,12 +412,15 @@ function main()
                     {                        
                         if( ($rowCurrent["k_batch_last_name"] != $dirName) ||
                             (intval($rowCurrent["k_batch_last_start_ts"]) != $batchStartUnix) ||
-                            (intval($rowCurrent["k_batch_last_end_ts"]) != $batchEndUnix) )
+                            (intval($rowCurrent["k_batch_last_end_ts"]) != $batchEndUnix) || 
+                            (intval($rowCurrent["k_transmission_risk_level"]) != $transmissionRiskLevel)
+                            )
                         {
                             $sql = "update tek_keys set ";
                             $sql .= " k_batch_last_name='" . escapeSql2($db, $dirName) . "',";
                             $sql .= " k_batch_last_start_ts=" . escapeSqlNum($batchStartUnix) . ",";
-                            $sql .= " k_batch_last_end_ts=" . escapeSqlNum($batchEndUnix) . "";
+                            $sql .= " k_batch_last_end_ts=" . escapeSqlNum($batchEndUnix) . ",";
+                            $sql .= " k_transmission_risk_level=" . escapeSqlNum($transmissionRiskLevel) . "";                            
                             $sql .= " where " . $sqlWhere;
                             executeSql($db, $sql);
                         }
@@ -457,9 +481,9 @@ function main()
     // Ensure days sorted
     ksort($current["days"]);
 
-    file_put_contents(getDataPath() . '/current.json', jsonEncode($current));
+    file_put_contents(getDataPath() . '/current.json', jsonEncode($current, true));
 
-    mylog("Total keys in DB: " . jsonEncode(fetchSql($db, "select k_source,count(*) from tek_keys group by k_source")));
+    //mylog("Total keys in DB: " . jsonEncode(fetchSql($db, "select k_source,count(*) from tek_keys group by k_source")));
 
     if($db !== null)
         mysqli_close($db);

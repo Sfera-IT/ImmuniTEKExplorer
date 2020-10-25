@@ -5,9 +5,17 @@ function error($desc)
     throw new Exception($desc);
 }
 
-function jsonEncode($data)
+function jsonEncode($json, $pretty = false)
 {
-    return json_encode($data, JSON_PRETTY_PRINT);
+    $result = json_encode($json, (($pretty) ? JSON_PRETTY_PRINT:0));
+    
+    if(json_last_error_msg() != "No error")
+    {
+        logDebug("Hit JSON encoding error");
+        $result = json_encode(array("error" => json_last_error_msg()));
+    }
+    
+    return $result;
 }
 
 function jsonDecode($data)
@@ -20,6 +28,17 @@ function mylog($v)
     $line = date('r') . " - " . $v . "\n";
     echo $line;
     file_put_contents(getDataPath() . "log.txt", $line, FILE_APPEND | LOCK_EX);
+}
+
+function extractStringBetween($src, $from, $to)
+{
+    $posFrom = strpos($src, $from);
+    if($posFrom === false)
+        return "";
+    $posTo = strpos($src, $to, $posFrom + strlen($from));
+    if($posTo === false)
+        return "";
+    return substr($src, $posFrom + strlen($from), $posTo-$posFrom-strlen($from));
 }
 
 function getDataPath()

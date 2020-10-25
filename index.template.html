@@ -16,6 +16,7 @@
         .toolbar
         {
             text-align:center;
+            padding:1em;
         }
 
         .docs, .docs_important
@@ -30,6 +31,25 @@
             text-align:center;
             background-color:#ffffaa;            
         }
+
+        #chartDesc
+        {
+            padding:0.5em;
+            color:#444444;
+            font-size:0.8em;
+        }
+
+        #chartDescTech
+        {
+            padding:0.5em;
+            color:gray;
+            font-size:0.7em;
+        }    
+
+        .chart
+        {
+            height:70vh;
+        } 
     </style>
 
 </head>
@@ -43,21 +63,31 @@ Visualizzazioni di questa pagina: <?php echo explode(" ", exec('wc -l ./charthit
 -->
 
 <div class="toolbar">
-    <select id="chartType">
-        <option value="tek">Tek</option>
-        <option value="new_cases">New cases</option>
-        <option value="perc_positive_v1">% installation (estimated v1)</option>
-        <option value="dbkeys">dbkeys</option>        
-        <option value="app_download">app_download</option>        
-        <option value="app_notifications_sent">app_notifications_sent</option>        
-        <option value="app_positive_users">app_positive_users</option>        
+    <select id="chartType">        
+        <optgroup label="From official data (affidable):">
+            <option value="app_download">APP download - (IT only)</option>        
+            <option value="app_download_os">APP download - OS - (IT only)</option>        
+            <option value="app_notifications_sent">APP Notifications sent - (IT only)</option>        
+            <option value="app_positive_users">APP Positive users - (IT only)</option>        
+            <option value="app_contained_outbreaks">APP Contained Outbreaks - (IT only)</option>                
+            <option value="new_cases">Covid New cases</option>
+            <option value="new_deaths">Covid Deaths</option>
+        </optgroup>
+        <optgroup label="From calculation or interpretation:">
+            <option value="tek">Tek - Under development</option>        
+            <option value="perc_positive_v1">% installation (estimated v1) - Under development</option>
+            <option value="perc_positive_v2">% installation (estimated v2) - Under development</option>
+            <option value="dbkeys">dbkeys - Under development</option>                
+        </optgroup>
     </select>
     <select id="timeRange">
         <option value="31days">Last 31 days</option>
         <option value="7days">Last 7 days</option>        
         <option value="all">All</option>
     </select>
-    <div id='chartDesc'>        
+    <div id='chartDesc'> 
+    </div>
+    <div id='chartDescTech'> 
     </div>
 </div>
 
@@ -66,9 +96,7 @@ Visualizzazioni di questa pagina: <?php echo explode(" ", exec('wc -l ./charthit
 </div>
 
 <div class="docs_important">
-    Questo progetto è in sviluppo attivo/studio, dati NON affidabili.
-    <br>
-    I dati SwissCovid sono di certo errati, abbiamo problemi a recuperare tutti i TEK.
+    Questo progetto è in sviluppo attivo/studio, i dati riportati NON da fonti ufficiali NON sono affidabili.
 </div>
 
 <div class="docs">    
@@ -79,23 +107,16 @@ Visualizzazioni di questa pagina: <?php echo explode(" ", exec('wc -l ./charthit
     </ul>
 </div>
 
-<div class="docs">
-    Dati che abbiamo raccolto per ogni giorno in ogni paese, per riflettere su correlazioni o grafici da aggiungere:
-    <ul>
-        <li>N. di Tek (da analisi endpoint delle varie app</li>
-        <li>total_cases (da OWID)</li>
-        <li>new_cases (da OWID)</li>
-        <li>total_deaths (da OWID)</li>
-        <li>new_deaths (da OWID)</li>
-    </ul>
-    (ometto dei dati da OWID calcolati come 'smoothed', o '_per_million')
-</div>
-
-<div class="docs">
-    Tech:
-    <ul>
-        <li>Il job gira ogni ora. <a href='data/log.txt'>Ultimo log</a></li>
-    </ul>
+<div class="docs">    
+    <p>
+        Contacts (Twitter): <a href='https://twitter.com/lombax85'>@lombax85</a>, <a href='https://twitter.com/g_bonfiglio'>@g_bonfiglio</a>, <a href='https://twitter.com/ebobferraris'>@ebobferraris</a>, <a href='https://twitter.com/_happycactus_'>@_happycactus_</a>, <a href='https://twitter.com/Clodo76'>@Clodo76</a>
+    </p>
+    <p>
+        Tech:
+        <ul>
+            <li>Il job gira ogni ora. <a href='data/log.txt'>Ultimo log</a></li>
+        </ul>
+    </p>
 </div>
 
 
@@ -112,43 +133,29 @@ function initDatasetCountry(countryData)
     dataset.backgroundColor = countryData.backgroundColor;
     dataset.borderColor = countryData.borderColor;
     dataset.data = [];
-    dataset.borderWidth = 1;
+    dataset.borderWidth = 3;
+    /*dataset.fill = false;*/
     return dataset;
 }
 
 function rebuild()
 {
+    // TODO: multilanguage
     var chartType = $('#chartType').val();
 
-    if(chartType == "tek")
+    // Update descriptions
+    $("#chartDesc").text("");
+    $("#chartDescTech").text("");
+    if(chartType in data.static.charts)
     {
-        $("#chartDesc").text("TEK raccolte dalle App di Contact-Tracing Digitale");
+        if("desc" in data.static.charts[chartType])
+            if("it" in data.static.charts[chartType].desc)
+                $("#chartDesc").text(data.static.charts[chartType].desc["it"]);
+        if("tech" in data.static.charts[chartType])
+            if("it" in data.static.charts[chartType].tech)
+                $("#chartDescTech").text(data.static.charts[chartType].tech["it"]);
     }
-    else if(chartType == "new_cases")
-    {
-        $("#chartDesc").text("Nuovi casi");
-    }
-    else if(chartType == "perc_positive_v1")
-    {
-        $("#chartDesc").text("(nTek / 12) inteso come positivi che avevano l'app, in rapporto ai nuovi casi");
-    }
-    else if(chartType == "dbkeys")
-    {
-        $("#chartDesc").text("test");
-    }
-    else if(chartType == "app_download")
-    {
-        $("#chartDesc").text("Official Data - Download");
-    }
-    else if(chartType == "app_notifications_sent")
-    {
-        $("#chartDesc").text("Official Data - Notifications sent");
-    }
-    else if(chartType == "app_positive_users")
-    {
-        $("#chartDesc").text("Official Data - Positive Users");
-    }    
-
+    
     buildDatasets();
 }
 
@@ -231,6 +238,21 @@ function buildDatasets()
 
             chart.data.datasets.push(dataset)
         }
+        else if(chartType === "new_deaths")
+        {
+            var dataset = initDatasetCountry(countryData);
+            
+            for(var iDay=0;iDay<xDays.length;iDay++)
+            {
+                var day = xDays[iDay];
+                if(day in data.days)
+                    if(countryCode in data.days[day])
+                        if("new_cases" in data.days[day][countryCode])
+                            dataset.data.push({'x':day,'y':data.days[day][countryCode]["new_deaths"]})
+            }
+
+            chart.data.datasets.push(dataset)
+        }
         else if(chartType === "perc_positive_v1")
         {
             var dataset = initDatasetCountry(countryData);
@@ -263,20 +285,106 @@ function buildDatasets()
 
             chart.data.datasets.push(dataset)
         }
-        else if(chartType === "app_download")
+        else if(chartType === "perc_positive_v2")
         {
             var dataset = initDatasetCountry(countryData);
             
             for(var iDay=0;iDay<xDays.length;iDay++)
             {
                 var day = xDays[iDay];
+                $v = 0;
                 if(day in data.days)
+                {
                     if(countryCode in data.days[day])
-                        if("app_download" in data.days[day][countryCode])
-                            dataset.data.push({'x':day,'y':data.days[day][countryCode]["app_download"]})
+                    {
+                        if("nTek" in data.days[day][countryCode]) // Without nTek, don't compute point
+                        {
+                            if("new_cases" in data.days[day][countryCode]) // Without new_cases, don't compute point
+                            {
+                                var v=0;
+
+                                if(data.days[day][countryCode]["new_cases"] != 0) // If new_cases==0, compute anyway point
+                                {
+                                    v = (100*(data.days[day][countryCode]["nKeys"]/14)/data.days[day][countryCode]["new_cases"]);                            
+                                }
+
+                                dataset.data.push({'x':day,'y':v})
+                            }                    
+                        }                    
+                    }
+                }
             }
 
             chart.data.datasets.push(dataset)
+        }
+        else if(chartType === "app_download")
+        {
+            {
+                var dataset = initDatasetCountry(countryData);
+                
+                for(var iDay=0;iDay<xDays.length;iDay++)
+                {
+                    var day = xDays[iDay];
+                    if(day in data.days)
+                        if(countryCode in data.days[day])
+                            if("app_download_os_total" in data.days[day][countryCode])
+                                dataset.data.push({'x':day,'y':data.days[day][countryCode]["app_download_os_total"]})
+                }
+
+                chart.data.datasets.push(dataset)
+            }
+
+            
+        }
+        else if(chartType === "app_download_os")
+        {
+            {
+                var dataset = initDatasetCountry(countryData);
+                dataset.label += " Total";
+                
+                for(var iDay=0;iDay<xDays.length;iDay++)
+                {
+                    var day = xDays[iDay];
+                    if(day in data.days)
+                        if(countryCode in data.days[day])
+                            if("app_download_os_total" in data.days[day][countryCode])
+                                dataset.data.push({'x':day,'y':data.days[day][countryCode]["app_download_os_total"]})
+                }
+
+                chart.data.datasets.push(dataset)
+            }
+
+            {
+                var dataset = initDatasetCountry(countryData);
+                dataset.label += " Android";
+                
+                for(var iDay=0;iDay<xDays.length;iDay++)
+                {
+                    var day = xDays[iDay];
+                    if(day in data.days)
+                        if(countryCode in data.days[day])
+                            if("app_download_os_android" in data.days[day][countryCode])
+                                dataset.data.push({'x':day,'y':data.days[day][countryCode]["app_download_os_android"]})
+                }
+
+                chart.data.datasets.push(dataset)
+            }
+
+            {
+                var dataset = initDatasetCountry(countryData);
+                dataset.label += " iOS";
+                
+                for(var iDay=0;iDay<xDays.length;iDay++)
+                {
+                    var day = xDays[iDay];
+                    if(day in data.days)
+                        if(countryCode in data.days[day])
+                            if("app_download_os_ios" in data.days[day][countryCode])
+                                dataset.data.push({'x':day,'y':data.days[day][countryCode]["app_download_os_ios"]})
+                }
+
+                chart.data.datasets.push(dataset)
+            }
         }
         else if(chartType === "app_notifications_sent")
         {
@@ -308,6 +416,21 @@ function buildDatasets()
 
             chart.data.datasets.push(dataset)
         }
+        else if(chartType === "app_contained_outbreaks")
+        {
+            var dataset = initDatasetCountry(countryData);
+            
+            for(var iDay=0;iDay<xDays.length;iDay++)
+            {
+                var day = xDays[iDay];
+                if(day in data.days)
+                    if(countryCode in data.days[day])
+                        if("app_contained_outbreaks" in data.days[day][countryCode])
+                            dataset.data.push({'x':day,'y':data.days[day][countryCode]["app_contained_outbreaks"]})
+            }
+
+            chart.data.datasets.push(dataset)
+        }        
     }
 
     chart.update();
@@ -315,12 +438,19 @@ function buildDatasets()
 
 function main()
 {
-    chart = new Chart(document.getElementById("chart1").getContext("2d"), {
+    console.log("TekExplorer v0.1");
+    console.log("Variable 'days' contain all data. Use in expression, for example");
+    console.log("(100 * data.days['2020-10-14'].it.nKeys/12) / data.days['2020-10-14'].it.new_cases");
+    console.log("Click a point chart will dump available data of the clicked day ( data.days['<clicked_day>'] )");
+
+    var domChart = document.getElementById("chart1");
+    chart = new Chart(domChart.getContext("2d"), {
         type: 'line',
         data: {
             datasets: []
         },
         options: {
+            maintainAspectRatio: false,
             scales: {
                 xAxes: [{
                     type: 'time',
@@ -328,9 +458,23 @@ function main()
                         unit: 'day'
                     }
                 }]
+            },
+            onClick: (evt, item) => {                
+                // Dump day in JS console
+                if(item.length>0)
+                {
+                    var index = item[0]["_index"];
+                    var point = item[0]["_chart"].config.data.datasets[0].data[index];
+                    console.log(point["x"], data.days[point["x"]]);
+                }
             }
         }
     });
+/*
+    domChart.onclick = function (evt) {
+        var activePoints = this.getElementAtEvent(evt);
+        var theElement = this.config.data.datasets[activePoints[0]._datasetIndex].data[activePoints[0]._index];        
+    }*/
 
     $('#chartType').change(function() {
         rebuild();
@@ -345,7 +489,7 @@ function main()
       method: 'GET',
       success: function(response) {
         data = response;
-        console.log(data);        
+        console.log("data", data);        
         rebuild();
       },
       error: function() {

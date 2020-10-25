@@ -114,5 +114,66 @@
                 "redownload": true
             }
         }        
+    },
+    "charts": {
+        "app_download":
+        {
+            "desc": {
+                "it": "N. di download delle APP di contact-tracing digitale, da fonte ufficiale"
+            }
+        },
+        "app_download_os":
+        {
+            "desc": {
+                "it": "N. di download delle APP di contact-tracing digitale, da fonte ufficiale, per sistema operativo"
+            }
+        },
+        "app_notifications_sent":
+        {
+            "desc": {
+                "it": "N. di notifiche inviate delle APP di contact-tracing digitale, da fonte ufficiale",
+                "en": "Notifications sent by contract-tracing APP, from official source"
+            }
+        },
+        "app_positive_users":
+        {
+            "desc": {
+                "it": "N. di positivi delle APP di contact-tracing digitale, da fonte ufficiale",
+                "en": "Positive by contract-tracing APP, from official source"
+            }
+        },
+        "app_contained_outbreaks":
+        {
+            "desc": {
+                "it": "?"
+            }
+        },
+        "new_cases":
+        {
+            "desc": {
+                "it": "Nuovi casi, da dati 'Our World in Data'"
+            }
+        },
+        "tek":
+        {
+            "desc": {
+                "it": "?"
+            }
+        },
+        "perc_positive_v1":
+        {
+            "desc": {
+                "it": "(nTek / 12) inteso come positivi che avevano l'app, in rapporto ai nuovi casi"
+            }
+        },
+        "dbkeys":
+        {
+            "desc": {
+                "it": "Volume di TEK giornaliere delle APP di contact-tracing. Una forma a campana è normale, perchè ogni giorno vengono inserite TEK riferite a giorni precedenti."
+            },
+            "tech": {
+                "it": "Ogni TEK viene inserita nel database, poi raggruppate per data della TEK (Rolling interval)"
+            }
+        }
     }
 }
