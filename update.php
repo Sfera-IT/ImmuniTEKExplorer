@@ -219,10 +219,14 @@ function main()
         {
             $d = $item["date"];
             $dn = date('Y-m-d', strtotime($d));
-            $current["days"][$dn][$countryCode]["new_cases"] = $item["new_cases"];
+            if(isset($item["new_cases"]))
+                $current["days"][$dn][$countryCode]["new_cases"] = $item["new_cases"];
+                if(isset($item["total_cases"]))
             $current["days"][$dn][$countryCode]["total_cases"] = $item["total_cases"];            
-            $current["days"][$dn][$countryCode]["new_deaths"] = $item["new_deaths"];            
-            $current["days"][$dn][$countryCode]["total_deaths"] = $item["total_deaths"];
+            if(isset($item["new_deaths"]))
+                $current["days"][$dn][$countryCode]["new_deaths"] = $item["new_deaths"];            
+            if(isset($item["total_deaths"]))
+                $current["days"][$dn][$countryCode]["total_deaths"] = $item["total_deaths"];
         }
 
         // ----------------------------
@@ -283,11 +287,11 @@ function main()
         }
         sort($dirNames);
 
-                
+        
         if($config["compute_keys_hit"])
         {
             // Reset Hit Counter        
-            $sql = "update tek_keys set k_hit=0 where k_hit!=0 and k_source='" . escapeSql2($db, $countryCode) . "'";
+            $sql = "update tek_keys set k_hit='[]' where k_hit!='[]' and k_source='" . escapeSql2($db, $countryCode) . "'";
             executeSql($db, $sql);
         }
 
@@ -315,6 +319,7 @@ function main()
 
             $batchStartUnix = $pbuf->getStartTimestamp();
             $batchEndUnix = $pbuf->getEndTimestamp();
+            $batchRegion = $pbuf->getRegion();            
             $batchStartTimestamp = date('Y-m-d', $batchStartUnix); 
             $batchEndTimestamp = date('Y-m-d', $batchEndUnix);
             $d = date('Y-m-d', $pbuf->getEndTimestamp());
@@ -345,11 +350,12 @@ function main()
                         $sql .= " k_last_start_ts=" . escapeSqlNum($batchStartUnix) . ",";
                         $sql .= " k_last_end_ts=" . escapeSqlNum($batchEndUnix) . ",";
                         $sql .= $sqlWhere;
-                        executeSql($db,$sql);
-                        //mylog("SQL Batch Update:" . $$sql);
+                        executeSql($db,$sql);                        
                     }
                 }
             }
+
+            mylog("Batch Start: File:" . $filename . ", BatchRegion:" . $batchRegion . ", BatchStartTime:" . date('r', $batchStartUnix) . ", BatchEndTime:" . date('r', $batchEndUnix));
 
             $nKeysNew = 0;
             $nKeysTotal = 0;
@@ -363,11 +369,13 @@ function main()
                 //$id = hash('sha256',$singleKey->getKeyData());
                 $id = bin2hex($singleKey->getKeyData());
 
-                $transmissionRiskLevel = $singleKey->getTransmissionRiskLevel();                
+                $transmissionRiskLevel = $singleKey->getTransmissionRiskLevel();                                                
                 $rollingStartIntervalNumber = $singleKey->getRollingStartIntervalNumber();
                 $rollingPeriod = $singleKey->getRollingPeriod();
 
                 $rollingDate = $rollingStartIntervalNumber*10*60;
+                
+                
 
                 if($rollingDateMin === 0)
                 {
@@ -379,6 +387,13 @@ function main()
                 if($rollingDate>$rollingDateMax) $rollingDateMax = $rollingDate;
                 
                 //mylog("Key: " . $id . " - Period: " . $rollingPeriod . " - Time: " . date('r', $rollingDate));
+
+                /*
+                if($id === "fba4cf178fa7666feaea1bb4e26e5755")
+                {
+                    mylog("Caso da indagare 0002de5962a20305597369fb4c300022: Key " . $nKeysTotal . " in " . $dirName . " - Risk:" . $transmissionRiskLevel . " - Period: " . $rollingPeriod . " - Date:" . date("r", $rollingDate) . "");
+                }
+                */
 
                 // DB Keys
                 if($db !== null)
@@ -402,35 +417,82 @@ function main()
                         $sql .= "'" . escapeSql2($db, $dirName) . "',";
                         $sql .= "" . escapeSqlNum($batchStartUnix) . ",";
                         $sql .= "" . escapeSqlNum($batchEndUnix) . ",";
-                        $sql .= "1";
+                        $sql .= "'[]'";
                         $sql .= ")";
                         executeSql($db, $sql);
 
                         $nKeysNew++;
+
+                        $rowCurrent = fetchSqlRowNull($db, "select * from tek_keys where " . $sqlWhere);
                     }
-                    else
-                    {                        
-                        if( ($rowCurrent["k_batch_last_name"] != $dirName) ||
-                            (intval($rowCurrent["k_batch_last_start_ts"]) != $batchStartUnix) ||
-                            (intval($rowCurrent["k_batch_last_end_ts"]) != $batchEndUnix) || 
-                            (intval($rowCurrent["k_transmission_risk_level"]) != $transmissionRiskLevel)
-                            )
+
+                    {   
+                        $hitData = jsonDecode($rowCurrent["k_hit"]);
+                        if($hitData === FALSE)
+                            $hitData = array();
+
+                            /*
+                        if( (count($hitData) === 0) && (($batchStartUnix-$rollingDate)>60*60*24*13) )
+                            mylog("Caso da indagare " . $id . ": Key " . $nKeysTotal . " in " . $dirName . " - Risk:" . $transmissionRiskLevel . " - Period: " . $rollingPeriod . " - Date:" . date("r", $rollingDate) . "");
+                            */
+
+                        $hitData[$countryCode] = true;
+
+                        $hitDataJson = jsonEncode($hitData);
+
+                        if($rowCurrent["k_hit"] != $hitDataJson)
                         {
                             $sql = "update tek_keys set ";
-                            $sql .= " k_batch_last_name='" . escapeSql2($db, $dirName) . "',";
-                            $sql .= " k_batch_last_start_ts=" . escapeSqlNum($batchStartUnix) . ",";
-                            $sql .= " k_batch_last_end_ts=" . escapeSqlNum($batchEndUnix) . ",";
-                            $sql .= " k_transmission_risk_level=" . escapeSqlNum($transmissionRiskLevel) . "";                            
+                            $sql .= " k_hit='" . escapeSql2($db, $hitDataJson) . "'";
                             $sql .= " where " . $sqlWhere;
                             executeSql($db, $sql);
+                            //mylog("Tek update lastname");
                         }
 
+                        if($rowCurrent["k_batch_last_name"] != $dirName)
+                        {
+                            $sql = "update tek_keys set ";
+                            $sql .= " k_batch_last_name='" . escapeSql2($db, $dirName) . "'";
+                            $sql .= " where " . $sqlWhere;
+                            executeSql($db, $sql);
+                            //mylog("Tek update lastname");
+                        }
+
+                        if($rowCurrent["k_batch_last_start_ts"] != $batchStartUnix)
+                        {
+                            $sql = "update tek_keys set ";
+                            $sql .= " k_batch_last_start_ts=" . escapeSqlNum($batchStartUnix) . "";
+                            $sql .= " where " . $sqlWhere;
+                            executeSql($db, $sql);
+                            //mylog("Tek update k_batch_last_start_ts");
+                        }
+
+                        if($rowCurrent["k_batch_last_end_ts"] != $batchEndUnix)
+                        {
+                            $sql = "update tek_keys set ";
+                            $sql .= " k_batch_last_end_ts=" . escapeSqlNum($batchEndUnix) . "";
+                            $sql .= " where " . $sqlWhere;
+                            executeSql($db, $sql);
+                            //mylog("Tek update k_batch_last_end_ts");
+                        }
+
+                        if(intval($rowCurrent["k_transmission_risk_level"]) != $transmissionRiskLevel)
+                        {
+                            $sql = "update tek_keys set ";
+                            $sql .= " k_transmission_risk_level=" . escapeSqlNum($transmissionRiskLevel) . "";
+                            $sql .= " where " . $sqlWhere;
+                            executeSql($db, $sql);
+                            //mylog("Tek update k_transmission_risk_level");
+                        }
+
+                        /*
                         if($config["compute_keys_hit"])
                         {
                             // Already exists, nothing to do?
                             $sql = "update tek_keys set k_hit=k_hit+1 where " . $sqlWhere;
                             executeSql($db, $sql);
                         }
+                        */
                     }
                 }
             }
@@ -445,7 +507,7 @@ function main()
                 executeSql($db, $sql);
             }
 
-            mylog("Tek: File:" . $filename . ", BatchStartTime:" . date('r', $pbuf->getStartTimestamp()) . ", BatchEndTime:" . date('r', $pbuf->getEndTimestamp()) . ", Keys min time:" . date('r', $rollingDateMin) . ", Keys max time:" . date('r', $rollingDateMax) . ", Keys in file:" . $nKeysTotal . ", Keys new:" . $nKeysNew);
+            mylog("Batch   End: File:" . $filename . ", BatchRegion:" . $batchRegion . ", BatchStartTime:" . date('r', $batchStartUnix) . ", BatchEndTime:" . date('r', $batchEndUnix) . ", Keys min time:" . date('r', $rollingDateMin) . ", Keys max time:" . date('r', $rollingDateMax) . ", Keys in file:" . $nKeysTotal . ", Keys new:" . $nKeysNew);
             
             if(isset($current["days"][$d][$countryCode]["nTek"]) === false)
                 $current["days"][$d][$countryCode]["nTek"] = 0;

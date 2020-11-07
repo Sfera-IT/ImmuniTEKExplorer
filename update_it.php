@@ -4,36 +4,25 @@ class TekExplorer_it
 {
     function do(&$current, $countryCode, $countryData)
     {
-        $full = file_get_contents("https://www.immuni.italia.it/main.13bed95689cbd21052e2.js");
-        $str = extractStringBetween($full, "e.exports=JSON.parse('","')"); 
-        $os = jsonDecode($str);
-        $full = str_replace("e.exports=JSON.parse('" . $str . "')", "",$full);
-        $str = extractStringBetween($full, "e.exports=JSON.parse('","')"); 
-        $misc = jsonDecode($str);
-        $full = str_replace("e.exports=JSON.parse('" . $str . "')", "",$full);
-        $str = extractStringBetween($full, "e.exports=JSON.parse('","')"); 
-        $topo1 = jsonDecode($str);
-        $full = str_replace("e.exports=JSON.parse('" . $str . "')", "",$full);
-        $str = extractStringBetween($full, "e.exports=JSON.parse('","')"); 
-        $topo2 = jsonDecode($str);
-        $full = str_replace("e.exports=JSON.parse('" . $str . "')", "",$full);
-        $str = extractStringBetween($full, "e.exports=JSON.parse('","')"); 
-        $regions = jsonDecode($str); // Non va, non so perchè.    
-        
-        foreach($os as $k => $v)
+        $dataAndamentoDownload = jsonDecode(file_get_contents("https://raw.githubusercontent.com/immuni-app/immuni-dashboard-data/master/dati/andamento-download.json"));
+
+        foreach($dataAndamentoDownload as $item)
         {
-            $day = date('Y-m-d', strtotime($k));
-            $current["days"][$day][$countryCode]["app_download_os_ios"] = $v["ios"];
-            $current["days"][$day][$countryCode]["app_download_os_android"] = $v["android"];
-            $current["days"][$day][$countryCode]["app_download_os_total"] = $v["total"];
+            $day = date('Y-m-d', strtotime($item["data"]));
+            $current["days"][$day][$countryCode]["app_download_os_ios"] = $item["ios"];
+            $current["days"][$day][$countryCode]["app_download_os_android"] = $item["android"];
+            $current["days"][$day][$countryCode]["app_download_os_ios_android"] = $item["ios_android"];
         }
 
-        foreach($misc as $k => $v)
+        $dataAndamentoDatiNazionali = jsonDecode(file_get_contents("https://raw.githubusercontent.com/immuni-app/immuni-dashboard-data/master/dati/andamento-dati-nazionali.json"));
+
+        foreach($dataAndamentoDatiNazionali as $item)
         {
-            $day = date('Y-m-d', strtotime($k));
-            $current["days"][$day][$countryCode]["app_notifications_sent"] = $v["notifications"];
-            $current["days"][$day][$countryCode]["app_positive_users"] = $v["positive_users"];
-            $current["days"][$day][$countryCode]["app_contained_outbreaks"] = $v["contained_outbreaks"];
+            $day = date('Y-m-d', strtotime($item["data"]));            
+            $current["days"][$day][$countryCode]["app_notifications_sent"] = $item["notifiche_inviate"];
+            $current["days"][$day][$countryCode]["app_positive_users"] = $item["utenti_positivi"];            
+            $current["days"][$day][$countryCode]["app_notifications_sent_total"] = $item["notifiche_inviate_totali"];
+            $current["days"][$day][$countryCode]["app_positive_users_total"] = $item["utenti_positivi_totali"];            
         }
     }
 }

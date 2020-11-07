@@ -68,8 +68,7 @@ Visualizzazioni di questa pagina: <?php echo explode(" ", exec('wc -l ./charthit
             <option value="app_download">APP download - (IT only)</option>        
             <option value="app_download_os">APP download - OS - (IT only)</option>        
             <option value="app_notifications_sent">APP Notifications sent - (IT only)</option>        
-            <option value="app_positive_users">APP Positive users - (IT only)</option>        
-            <option value="app_contained_outbreaks">APP Contained Outbreaks - (IT only)</option>                
+            <option value="app_positive_users">APP Positive users - (IT only)</option>                    
             <option value="new_cases">Covid New cases</option>
             <option value="new_deaths">Covid Deaths</option>
         </optgroup>
@@ -112,10 +111,7 @@ Visualizzazioni di questa pagina: <?php echo explode(" ", exec('wc -l ./charthit
         Contacts (Twitter): <a href='https://twitter.com/lombax85'>@lombax85</a>, <a href='https://twitter.com/g_bonfiglio'>@g_bonfiglio</a>, <a href='https://twitter.com/ebobferraris'>@ebobferraris</a>, <a href='https://twitter.com/_happycactus_'>@_happycactus_</a>, <a href='https://twitter.com/Clodo76'>@Clodo76</a>
     </p>
     <p>
-        Tech:
-        <ul>
-            <li>Il job gira ogni ora. <a href='data/log.txt'>Ultimo log</a></li>
-        </ul>
+        Devs: Open JS console/inspector for more info. The job that collect and process all data run every hour, <a href='data/log.txt'>latest log here</a>
     </p>
 </div>
 
@@ -327,8 +323,8 @@ function buildDatasets()
                     var day = xDays[iDay];
                     if(day in data.days)
                         if(countryCode in data.days[day])
-                            if("app_download_os_total" in data.days[day][countryCode])
-                                dataset.data.push({'x':day,'y':data.days[day][countryCode]["app_download_os_total"]})
+                            if("app_download_os_ios_android" in data.days[day][countryCode])
+                                dataset.data.push({'x':day,'y':data.days[day][countryCode]["app_download_os_ios_android"]})
                 }
 
                 chart.data.datasets.push(dataset)
@@ -347,8 +343,8 @@ function buildDatasets()
                     var day = xDays[iDay];
                     if(day in data.days)
                         if(countryCode in data.days[day])
-                            if("app_download_os_total" in data.days[day][countryCode])
-                                dataset.data.push({'x':day,'y':data.days[day][countryCode]["app_download_os_total"]})
+                            if("app_download_os_ios_android" in data.days[day][countryCode])
+                                dataset.data.push({'x':day,'y':data.days[day][countryCode]["app_download_os_ios_android"]})
                 }
 
                 chart.data.datasets.push(dataset)
@@ -412,21 +408,6 @@ function buildDatasets()
                     if(countryCode in data.days[day])
                         if("app_positive_users" in data.days[day][countryCode])
                             dataset.data.push({'x':day,'y':data.days[day][countryCode]["app_positive_users"]})
-            }
-
-            chart.data.datasets.push(dataset)
-        }
-        else if(chartType === "app_contained_outbreaks")
-        {
-            var dataset = initDatasetCountry(countryData);
-            
-            for(var iDay=0;iDay<xDays.length;iDay++)
-            {
-                var day = xDays[iDay];
-                if(day in data.days)
-                    if(countryCode in data.days[day])
-                        if("app_contained_outbreaks" in data.days[day][countryCode])
-                            dataset.data.push({'x':day,'y':data.days[day][countryCode]["app_contained_outbreaks"]})
             }
 
             chart.data.datasets.push(dataset)
